@@ -66,17 +66,26 @@ class MainWidget(BaseWidget):
         self.module_handler = self.module_handlers[self.module.name]
 
     def on_touch_down(self, touch):
+        if touch.button != 'left':
+            return
+
         global client, client_id
         # we send touch.pos instead because touch isn't json-serializable
         data = {'cid': client_id, 'module': self.module.name, 'pos': touch.pos}
         client.emit('on_touch_down', data)
 
     def on_touch_move(self, touch):
+        if touch.button != 'left':
+            return
+
         global client, client_id
         data = {'cid': client_id, 'module': self.module.name, 'pos': touch.pos}
         client.emit('on_touch_move', data)
 
     def on_touch_up(self, touch):
+        if touch.button != 'left':
+            return
+
         global client, client_id
         data = {'cid': client_id, 'module': self.module.name, 'pos': touch.pos}
         client.emit('on_touch_up', data)
