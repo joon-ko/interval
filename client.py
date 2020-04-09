@@ -8,21 +8,35 @@ from common.core import BaseWidget, run, lookup
 from common.gfxutil import topleft_label
 from kivy.core.window import Window
 
-from modules.bubble import Bubble
+from modules.bubble import PhysicsBubble, PhysicsBubbleHandler
 
 
 
-server_url = 'http://localhost:5000'
+server_url = 'http://173.52.37.59:8000/'
 client = socketio.Client()
 client.connect(server_url)
-
-@client.on('bubble')
-def add_bubble(data):
-    widget.add_bubble(data['cpos'])
 
 @client.on('update_count')
 def update_count(data):
     widget.update_count(data['count'])
+
+@client.on('on_touch_down')
+def on_touch_down(data):
+    module_str = data['module']
+    handler = widget.module_handlers[module_str]
+    handler.on_touch_down(data['pos'])
+
+@client.on('on_touch_move')
+def on_touch_down(data):
+    module_str = data['module']
+    handler = widget.module_handlers[module_str]
+    handler.on_touch_move(data['pos'])
+
+@client.on('on_touch_up')
+def on_touch_down(data):
+    module_str = data['module']
+    handler = widget.module_handlers[module_str]
+    handler.on_touch_up(data['pos'])
 
 
 
@@ -39,24 +53,53 @@ class MainWidget(BaseWidget):
         global client
         client.emit('update_count')
 
+        self.module_dict = {
+            'PhysicsBubble': PhysicsBubble,
+        }
+        self.module_handlers = {
+            'PhysicsBubble': PhysicsBubbleHandler(self.canvas),
+        }
+
+        # name a default starting module and handler
+        self.module = PhysicsBubble
+        self.module_handler = self.module_handlers[self.module.name]
+
     def on_touch_down(self, touch):
         global client
-        client.emit('bubble', {'cpos': touch.pos})
+        # we send touch.pos instead because touch isn't json-serializable
+        client.emit('on_touch_down', {'module': self.module.name, 'pos': touch.pos})
+
+    def on_touch_move(self, touch):
+        global client
+        client.emit('on_touch_move', {'module': self.module.name, 'pos': touch.pos})
+
+    def on_touch_up(self, touch):
+        global client
+        client.emit('on_touch_up', {'module': self.module.name, 'pos': touch.pos})
 
     def on_key_down(self, keycode, modifiers):
-        pass
+        global client
+        key = keycode[1]
+
+        # switch module using number keys
+        module_name = lookup(key, '1', [
+            'PhysicsBubble'
+        ])
+        if module_name is not None:
+            self.module = module_dict[module_name]
+            self.module_handler = module_handlers[module_name]
 
     def on_update(self):
-        self.info.text = '# connected: {}'.format(self.count)
+        for _, handler in self.module_handlers.items():
+            handler.on_update()
+
+        self.info.text = '# connected: {}\n'.format(self.count)
+        self.info.text += 'module: {}\n'.format(self.module.name)
 
     def on_close(self):
         # disconnect the client before kivy shuts down to prevent hanging connections.
         global client
         client.disconnect()
-
-    def add_bubble(self, cpos):
-        bubble = Bubble(cpos)
-        self.canvas.add(bubble)
 
     def update_count(self, count):
         self.count = count

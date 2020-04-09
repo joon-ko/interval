@@ -30,9 +30,10 @@ def connect():
 def disconnect():
     global client_count
     client_count -= 1
+    emit('update_count', {'count': client_count}, broadcast=True)
 
 @socketio.on('update_count')
-def get_count():
+def update_count():
     global client_count
     emit('update_count', {'count': client_count}, broadcast=True)
 
@@ -40,9 +41,19 @@ def get_count():
 ### sound module events ###
 ###########################
 
-@socketio.on('bubble')
-def add_bubble(data):
-    emit('bubble', data, broadcast=True)
+@socketio.on('on_touch_down')
+def on_touch_down(data):
+    emit('on_touch_down', data, broadcast=True)
+
+@socketio.on('on_touch_move')
+def on_touch_move(data):
+    emit('on_touch_move', data, broadcast=True)
+
+@socketio.on('on_touch_up')
+def on_touch_up(data):
+    emit('on_touch_up', data, broadcast=True)
+
+
 
 if __name__ == '__main__':
-    socketio.run(app, debug=True)
+    socketio.run(app, host='0.0.0.0', port='8000', debug=True)
