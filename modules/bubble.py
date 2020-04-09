@@ -65,48 +65,48 @@ class PhysicsBubbleHandler(object):
     def __init__(self, canvas):
         self.canvas = canvas
 
-        self.color = Color(1, 1, 1)
-        self.canvas.add(self.color)
-        self.hold_line = None
-        self.hold_point = None
-        self.hold_shape = None
+        self.client_ids = []
+
+        self.hold_lines = {}
+        self.hold_points = {}
+        self.hold_shapes = {}
+        self.colors = {}
 
         self.bubbles = AnimGroup()
         self.canvas.add(self.bubbles)
 
-    def on_touch_down(self, pos):
+    def on_touch_down(self, cid, pos):
         """
         Start drawing the drag line and preview of the PhysicsBubble.
         """
-        self.color.rgb = (1, 1, 1)
-        self.canvas.add(self.color)
-        self.hold_point = pos
-        self.hold_shape = CEllipse(cpos=pos, csize=(50, 50))
-        self.hold_line = Line(points=(*pos, *pos), width=2)
-        self.canvas.add(self.hold_shape)
-        self.canvas.add(self.hold_line)
+        self.hold_points[cid] = pos
+        self.hold_shapes[cid] = CEllipse(cpos=pos, csize=(50, 50))
+        self.hold_lines[cid] = Line(points=(*pos, *pos), width=2)
+        self.colors[cid] = Color(1, 1, 1)
 
-    def on_touch_move(self, pos):
+        self.canvas.add(self.colors[cid])
+        self.canvas.add(self.hold_shapes[cid])
+        self.canvas.add(self.hold_lines[cid])
+
+    def on_touch_move(self, cid, pos):
         """
         Update the position of the drag line and preview of the PhysicsBubble.
         """
-        self.hold_shape.set_cpos(pos)
-        self.hold_line.points = (*self.hold_point, *pos)
+        self.hold_shapes[cid].set_cpos(pos)
+        self.hold_lines[cid].points = (*self.hold_points[cid], *pos)
 
-    def on_touch_up(self, pos):
+    def on_touch_up(self, cid, pos):
         """
         Release the PhysicsBubble.
         """
-        self.canvas.remove(self.hold_shape)
-        self.canvas.remove(self.hold_line)
-        self.hold_shape = None
-        self.hold_line = None
+        self.canvas.remove(self.hold_shapes[cid])
+        self.canvas.remove(self.hold_lines[cid])
 
         # calculate velocity
-        dx = pos[0] - self.hold_point[0]
-        dy = pos[1] - self.hold_point[1]
+        hold_point = self.hold_points[cid]
+        dx = pos[0] - hold_point[0]
+        dy = pos[1] - hold_point[1]
         vel = (-dx, -dy)
-        self.hold_point = None
 
         bubble = PhysicsBubble(pos, vel)
         self.bubbles.add(bubble)

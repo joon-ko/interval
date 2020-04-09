@@ -15,6 +15,7 @@ from modules.bubble import PhysicsBubble, PhysicsBubbleHandler
 server_url = 'http://173.52.37.59:8000/'
 client = socketio.Client()
 client.connect(server_url)
+client_id = client.sid
 
 @client.on('update_count')
 def update_count(data):
@@ -24,19 +25,19 @@ def update_count(data):
 def on_touch_down(data):
     module_str = data['module']
     handler = widget.module_handlers[module_str]
-    handler.on_touch_down(data['pos'])
+    handler.on_touch_down(data['cid'], data['pos'])
 
 @client.on('on_touch_move')
-def on_touch_down(data):
+def on_touch_move(data):
     module_str = data['module']
     handler = widget.module_handlers[module_str]
-    handler.on_touch_move(data['pos'])
+    handler.on_touch_move(data['cid'], data['pos'])
 
 @client.on('on_touch_up')
-def on_touch_down(data):
+def on_touch_up(data):
     module_str = data['module']
     handler = widget.module_handlers[module_str]
-    handler.on_touch_up(data['pos'])
+    handler.on_touch_up(data['cid'], data['pos'])
 
 
 
@@ -65,17 +66,20 @@ class MainWidget(BaseWidget):
         self.module_handler = self.module_handlers[self.module.name]
 
     def on_touch_down(self, touch):
-        global client
+        global client, client_id
         # we send touch.pos instead because touch isn't json-serializable
-        client.emit('on_touch_down', {'module': self.module.name, 'pos': touch.pos})
+        data = {'cid': client_id, 'module': self.module.name, 'pos': touch.pos}
+        client.emit('on_touch_down', data)
 
     def on_touch_move(self, touch):
-        global client
-        client.emit('on_touch_move', {'module': self.module.name, 'pos': touch.pos})
+        global client, client_id
+        data = {'cid': client_id, 'module': self.module.name, 'pos': touch.pos}
+        client.emit('on_touch_move', data)
 
     def on_touch_up(self, touch):
-        global client
-        client.emit('on_touch_up', {'module': self.module.name, 'pos': touch.pos})
+        global client, client_id
+        data = {'cid': client_id, 'module': self.module.name, 'pos': touch.pos}
+        client.emit('on_touch_up', data)
 
     def on_key_down(self, keycode, modifiers):
         global client
@@ -86,8 +90,8 @@ class MainWidget(BaseWidget):
             'PhysicsBubble'
         ])
         if module_name is not None:
-            self.module = module_dict[module_name]
-            self.module_handler = module_handlers[module_name]
+            self.module = self.module_dict[module_name]
+            self.module_handler = self.module_handlers[module_name]
 
     def on_update(self):
         for _, handler in self.module_handlers.items():
