@@ -9,17 +9,9 @@ socketio = SocketIO(app)
 
 client_count = 0 # number of clients connected
 
-#################
-### api calls ###
-#################
-
 @app.route('/randint')
 def test_random():
     return str(random.randint(0, 10))
-
-###########################
-### misc. socket events ###
-###########################
 
 @socketio.on('connect')
 def connect():
@@ -37,21 +29,21 @@ def update_count():
     global client_count
     emit('update_count', {'count': client_count}, broadcast=True)
 
-###########################
-### sound module events ###
-###########################
-
-@socketio.on('on_touch_down')
+@socketio.on('touch_down')
 def on_touch_down(data):
-    emit('on_touch_down', data, broadcast=True)
+    emit('touch_down', data, broadcast=True)
 
-@socketio.on('on_touch_move')
+@socketio.on('touch_move')
 def on_touch_move(data):
-    emit('on_touch_move', data, broadcast=True)
+    emit('touch_move', data, broadcast=True)
 
-@socketio.on('on_touch_up')
+@socketio.on('touch_up')
 def on_touch_up(data):
-    emit('on_touch_up', data, broadcast=True)
+    emit('touch_up', data, broadcast=True)
+
+@socketio.on('key_down')
+def on_key_down(data):
+    emit('key_down', data, broadcast=True)
 
 
 

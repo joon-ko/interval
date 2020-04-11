@@ -4,8 +4,10 @@ sys.path.insert(0, os.path.abspath('..'))
 import requests
 import socketio
 
+from common.audio import Audio
 from common.core import BaseWidget, run, lookup
-from common.gfxutil import topleft_label
+from common.gfxutil import topleft_label, resize_topleft_label
+from common.mixer import Mixer
 from kivy.core.window import Window
 
 from modules.bubble import PhysicsBubble, PhysicsBubbleHandler
@@ -21,23 +23,29 @@ client_id = client.sid
 def update_count(data):
     widget.update_count(data['count'])
 
-@client.on('on_touch_down')
+@client.on('touch_down')
 def on_touch_down(data):
     module_str = data['module']
     handler = widget.module_handlers[module_str]
     handler.on_touch_down(data['cid'], data['pos'])
 
-@client.on('on_touch_move')
+@client.on('touch_move')
 def on_touch_move(data):
     module_str = data['module']
     handler = widget.module_handlers[module_str]
     handler.on_touch_move(data['cid'], data['pos'])
 
-@client.on('on_touch_up')
+@client.on('touch_up')
 def on_touch_up(data):
     module_str = data['module']
     handler = widget.module_handlers[module_str]
     handler.on_touch_up(data['cid'], data['pos'])
+
+@client.on('key_down')
+def on_key_down(data):
+    module_str = data['module']
+    handler = widget.module_handlers[module_str]
+    handler.on_key_down(data['cid'], data['key'])
 
 
 
@@ -51,14 +59,19 @@ class MainWidget(BaseWidget):
         self.response = None
         self.count = 0
 
-        global client
+        self.audio = Audio(2)
+        self.mixer = Mixer()
+        self.mixer.set_gain(0.2)
+        self.audio.set_generator(self.mixer)
+
+        global client, client_id
         client.emit('update_count')
 
         self.module_dict = {
             'PhysicsBubble': PhysicsBubble,
         }
         self.module_handlers = {
-            'PhysicsBubble': PhysicsBubbleHandler(self.canvas),
+            'PhysicsBubble': PhysicsBubbleHandler(self.canvas, self.mixer, client_id),
         }
 
         # name a default starting module and handler
@@ -72,7 +85,7 @@ class MainWidget(BaseWidget):
         global client, client_id
         # we send touch.pos instead because touch isn't json-serializable
         data = {'cid': client_id, 'module': self.module.name, 'pos': touch.pos}
-        client.emit('on_touch_down', data)
+        client.emit('touch_down', data)
 
     def on_touch_move(self, touch):
         if touch.button != 'left':
@@ -80,7 +93,7 @@ class MainWidget(BaseWidget):
 
         global client, client_id
         data = {'cid': client_id, 'module': self.module.name, 'pos': touch.pos}
-        client.emit('on_touch_move', data)
+        client.emit('touch_move', data)
 
     def on_touch_up(self, touch):
         if touch.button != 'left':
@@ -88,26 +101,34 @@ class MainWidget(BaseWidget):
 
         global client, client_id
         data = {'cid': client_id, 'module': self.module.name, 'pos': touch.pos}
-        client.emit('on_touch_up', data)
+        client.emit('touch_up', data)
 
     def on_key_down(self, keycode, modifiers):
-        global client
+        global client, client_id
         key = keycode[1]
 
-        # switch module using number keys
-        module_name = lookup(key, '1', [
+        # switch module using keys (for now)
+        module_name = lookup(key, 'q', [
             'PhysicsBubble'
         ])
         if module_name is not None:
             self.module = self.module_dict[module_name]
             self.module_handler = self.module_handlers[module_name]
+        else:
+            data = {'cid': client_id, 'module': self.module.name, 'key': key}
+            client.emit('key_down', data)
 
     def on_update(self):
+        self.audio.on_update()
         for _, handler in self.module_handlers.items():
             handler.on_update()
 
         self.info.text = '# connected: {}\n'.format(self.count)
         self.info.text += 'module: {}\n'.format(self.module.name)
+        self.info.text += self.module_handler.display_controls()
+
+    def on_layout(self, win_size):
+        resize_topleft_label(self.info)
 
     def on_close(self):
         # disconnect the client before kivy shuts down to prevent hanging connections.
