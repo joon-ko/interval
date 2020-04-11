@@ -19,36 +19,6 @@ client = socketio.Client()
 client.connect(server_url)
 client_id = client.sid
 
-@client.on('update_count')
-def update_count(data):
-    widget.update_count(data['count'])
-
-@client.on('touch_down')
-def on_touch_down(data):
-    module_str = data['module']
-    handler = widget.module_handlers[module_str]
-    handler.on_touch_down(data['cid'], data['pos'])
-
-@client.on('touch_move')
-def on_touch_move(data):
-    module_str = data['module']
-    handler = widget.module_handlers[module_str]
-    handler.on_touch_move(data['cid'], data['pos'])
-
-@client.on('touch_up')
-def on_touch_up(data):
-    module_str = data['module']
-    handler = widget.module_handlers[module_str]
-    handler.on_touch_up(data['cid'], data['pos'])
-
-@client.on('key_down')
-def on_key_down(data):
-    module_str = data['module']
-    handler = widget.module_handlers[module_str]
-    handler.on_key_down(data['cid'], data['key'])
-
-
-
 class MainWidget(BaseWidget):
     def __init__(self):
         super(MainWidget, self).__init__()
@@ -137,6 +107,34 @@ class MainWidget(BaseWidget):
 
     def update_count(self, count):
         self.count = count
+
+@client.on('update_count')
+def update_count(data):
+    widget.update_count(data['count'])
+
+@client.on('touch_down')
+def on_touch_down(data):
+    module_str = data['module']
+    handler = widget.module_handlers[module_str]
+    handler.on_touch_down(data['cid'], data['pos'])
+
+@client.on('touch_move')
+def on_touch_move(data):
+    module_str = data['module']
+    handler = widget.module_handlers[module_str]
+    handler.on_touch_move(data['cid'], data['pos'])
+
+@client.on('touch_up')
+def on_touch_up(data):
+    module_str = data['module']
+    handler = widget.module_handlers[module_str]
+    handler.on_touch_up(data['cid'], data['pos'])
+
+@client.on('key_down')
+def on_key_down(data):
+    module_str = data['module']
+    handler = widget.module_handlers[module_str]
+    handler.on_key_down(data['cid'], data['key'])
 
 if __name__ == "__main__":
     # we need an instance of MainWidget() to make handling socket events easier.
