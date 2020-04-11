@@ -2,7 +2,7 @@ import sys, os
 sys.path.insert(0, os.path.abspath('..'))
 
 from common.core import lookup
-from common.gfxutil import topleft_label, CEllipse, AnimGroup
+from common.gfxutil import topleft_label, CEllipse, CLabelRect, AnimGroup
 from common.note import NoteGenerator, Envelope
 from kivy.graphics import Color, Line
 from kivy.graphics.instructions import InstructionGroup
@@ -20,16 +20,22 @@ class PhysicsBubble(InstructionGroup):
     def __init__(self, pos, vel, pitch, color, callback=None):
         super(PhysicsBubble, self).__init__()
 
-        self.r = 25
+        self.r = 40
         self.pos = np.array(pos, dtype=np.float)
         self.vel = 2 * np.array(vel, dtype=np.float)
 
+        self.bounces = 5 # hard-code a value for now
         self.pitch = pitch
         self.color = Color(*color)
-        self.add(self.color)
+        self.text_color = Color(0, 0, 0)
 
-        self.bubble = CEllipse(cpos=pos, csize=(50, 50))
+        self.text = CLabelRect(cpos=pos, text=str(self.bounces))
+        self.bubble = CEllipse(cpos=pos, csize=(80, 80))
+
+        self.add(self.color)
         self.add(self.bubble)
+        self.add(self.text_color)
+        self.add(self.text)
 
         self.callback = callback
         self.on_update(0)
@@ -37,10 +43,12 @@ class PhysicsBubble(InstructionGroup):
     def on_update(self, dt):
         self.pos += self.vel * dt
 
-        if self.check_for_collisions() and self.callback is not None:
-            self.callback(self.pitch)
+        if self.bounces != 0:
+            if self.check_for_collisions() and self.callback is not None:
+                self.callback(self.pitch)
 
         self.bubble.set_cpos(self.pos)
+        self.text.set_cpos(self.pos)
 
         return True
 
@@ -49,25 +57,39 @@ class PhysicsBubble(InstructionGroup):
         if self.pos[1] - self.r < 0:
             self.vel[1] = -self.vel[1]
             self.pos[1] = self.r
+            self.bounces -= 1
+            self.text.set_text(str(self.bounces))
             return True
 
         # collision with top
         if self.pos[1] + self.r > Window.height:
             self.vel[1] = -self.vel[1]
             self.pos[1] = Window.height - self.r
+            self.bounces -= 1
+            self.text.set_text(str(self.bounces))
             return True
 
         # collision with left
         if self.pos[0] - self.r < 0:
             self.vel[0] = -self.vel[0]
             self.pos[0] = self.r
+            self.bounces -= 1
+            self.text.set_text(str(self.bounces))
             return True
 
         # collision with right
         if self.pos[0] + self.r > Window.width:
             self.vel[0] = -self.vel[0]
             self.pos[0] = Window.width - self.r
+            self.bounces -= 1
+            self.text.set_text(str(self.bounces))
             return True
+
+    def check_offscreen(self):
+        return (self.pos[0] - self.radius > Window.width) or \
+               (self.pos[0] + self.radius < 0) or \
+               (self.pos[1] + self.radius < 0) or \
+               (self.pos[1] - self.radius > Window.height)
 
 class PhysicsBubbleHandler(object):
     """
@@ -98,6 +120,7 @@ class PhysicsBubbleHandler(object):
         self.color = {}
         self.pitch = {self.cid: 60}
         self.timbre = {}
+        self.bounces = {}
 
         self.bubbles = AnimGroup()
         self.canvas.add(self.bubbles)
@@ -107,8 +130,8 @@ class PhysicsBubbleHandler(object):
         Start drawing the drag line and preview of the PhysicsBubble.
         """
         self.hold_point[cid] = pos
-        self.hold_shape[cid] = CEllipse(cpos=pos, csize=(50, 50))
-        self.hold_line[cid] = Line(points=(*pos, *pos), width=2)
+        self.hold_shape[cid] = CEllipse(cpos=pos, csize=(80, 80))
+        self.hold_line[cid] = Line(points=(*pos, *pos), width=3)
 
         if cid not in self.color:
             self.color[cid] = self.color_dict['red']

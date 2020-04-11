@@ -61,7 +61,7 @@ class MainWidget(BaseWidget):
 
         self.audio = Audio(2)
         self.mixer = Mixer()
-        self.mixer.set_gain(0.2)
+        self.mixer.set_gain(1.0)
         self.audio.set_generator(self.mixer)
 
         global client, client_id
