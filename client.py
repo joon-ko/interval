@@ -14,7 +14,7 @@ from modules.bubble import PhysicsBubble, PhysicsBubbleHandler
 
 
 
-server_url = 'http://173.52.37.59:8000/'
+server_url = 'http://173.52.37.59:8000'
 client = socketio.Client()
 client.connect(server_url)
 client_id = client.sid
@@ -41,12 +41,15 @@ class MainWidget(BaseWidget):
             'PhysicsBubble': PhysicsBubble,
         }
         self.module_handlers = {
-            'PhysicsBubble': PhysicsBubbleHandler(self.canvas, self.mixer, client_id),
+            'PhysicsBubble': PhysicsBubbleHandler(self.canvas, self.mixer, client, client_id),
         }
 
         # name a default starting module and handler
         self.module = PhysicsBubble
         self.module_handler = self.module_handlers[self.module.name]
+
+        # sync with existing server state
+        client.emit('sync_state', {'module': self.module.name})
 
     def on_touch_down(self, touch):
         if touch.button != 'left':
@@ -102,6 +105,7 @@ class MainWidget(BaseWidget):
 
     def on_close(self):
         # disconnect the client before kivy shuts down to prevent hanging connections.
+        # possibly look into using core.py's register_terminate_func() instead?
         global client
         client.disconnect()
 
@@ -111,6 +115,17 @@ class MainWidget(BaseWidget):
 @client.on('update_count')
 def update_count(data):
     widget.update_count(data['count'])
+
+@client.on('sync_state')
+def sync_state(data):
+    module_str = data['module']
+    handler = widget.module_handlers[module_str]
+    handler.sync_state(data['state'])
+
+@client.on('update_state')
+def update_client_state(data):
+    state, cid = data['state'], data['cid']
+    widget.module_handler.update_client_state(cid, state)
 
 @client.on('touch_down')
 def on_touch_down(data):

@@ -17,17 +17,17 @@ class PhysicsBubble(InstructionGroup):
     """
     name = 'PhysicsBubble'
 
-    def __init__(self, pos, vel, pitch, color, callback=None):
+    def __init__(self, pos, vel, pitch, color, bounces, callback=None):
         super(PhysicsBubble, self).__init__()
 
         self.r = 40
         self.pos = np.array(pos, dtype=np.float)
         self.vel = 2 * np.array(vel, dtype=np.float)
 
-        self.bounces = 5 # hard-code a value for now
         self.pitch = pitch
         self.color = Color(*color)
         self.text_color = Color(0, 0, 0)
+        self.bounces = bounces
 
         self.text = CLabelRect(cpos=pos, text=str(self.bounces))
         self.bubble = CEllipse(cpos=pos, csize=(80, 80))
@@ -96,14 +96,17 @@ class PhysicsBubbleHandler(object):
     Handles user interaction and drawing of graphics before generating a PhysicsBubble.
     Also stores and updates all currently active PhysicsBubbles.
     """
-    def __init__(self, canvas, mixer, client_id):
+    def __init__(self, canvas, mixer, client, client_id):
+        self.module_name = 'PhysicsBubble'
         self.canvas = canvas
         self.mixer = mixer
+        self.client = client
         self.cid = client_id
 
         self.hold_line = {}
         self.hold_point = {}
         self.hold_shape = {}
+        self.text = {}
 
         self.color_dict = {
             'red': (255/255, 61/255, 40/255),
@@ -117,10 +120,20 @@ class PhysicsBubbleHandler(object):
         }
         self.pitch_list = [60, 62, 64, 65, 67, 69, 71, 72]
 
+        self.default_color = self.color_dict['red']
+        self.default_pitch = self.pitch_list[0]
+        self.default_timbre = 'sine'
+        self.default_bounces = 5
+        self.text_color = Color(0, 0, 0)
+
         self.color = {}
-        self.pitch = {self.cid: 60}
+        self.pitch = {}
         self.timbre = {}
         self.bounces = {}
+
+        # flag used to only display controls when this module is synced
+        # see on_update() and sync_state()
+        self.display = False
 
         self.bubbles = AnimGroup()
         self.canvas.add(self.bubbles)
@@ -132,19 +145,20 @@ class PhysicsBubbleHandler(object):
         self.hold_point[cid] = pos
         self.hold_shape[cid] = CEllipse(cpos=pos, csize=(80, 80))
         self.hold_line[cid] = Line(points=(*pos, *pos), width=3)
+        self.text[cid] = CLabelRect(cpos=pos, text=str(self.bounces[cid]))
 
-        if cid not in self.color:
-            self.color[cid] = self.color_dict['red']
         self.canvas.add(Color(*self.color[cid]))
-
         self.canvas.add(self.hold_shape[cid])
         self.canvas.add(self.hold_line[cid])
+        self.canvas.add(self.text_color)
+        self.canvas.add(self.text[cid])
 
     def on_touch_move(self, cid, pos):
         """
         Update the position of the drag line and preview of the PhysicsBubble.
         """
         self.hold_shape[cid].set_cpos(pos)
+        self.text[cid].set_cpos(pos)
         self.hold_line[cid].points = (*self.hold_point[cid], *pos)
 
     def on_touch_up(self, cid, pos):
@@ -152,6 +166,7 @@ class PhysicsBubbleHandler(object):
         Release the PhysicsBubble.
         """
         self.canvas.remove(self.hold_shape[cid])
+        self.canvas.remove(self.text[cid])
         self.canvas.remove(self.hold_line[cid])
 
         hold_point = self.hold_point[cid]
@@ -161,10 +176,14 @@ class PhysicsBubbleHandler(object):
 
         if cid not in self.pitch:
             self.pitch[cid] = self.pitch_list[0]
+        if cid not in self.bounces:
+            self.bounces[cid] = self.default_bounces
+
         pitch = self.pitch[cid]
         color = self.color[cid]
+        bounces = self.bounces[cid]
 
-        bubble = PhysicsBubble(pos, vel, pitch, color, callback=self.sound)
+        bubble = PhysicsBubble(pos, vel, pitch, color, bounces, callback=self.sound)
         self.bubbles.add(bubble)
 
     def on_key_down(self, cid, key):
@@ -176,14 +195,77 @@ class PhysicsBubbleHandler(object):
             self.pitch[cid] = self.pitch_list[index]
             self.color[cid] = self.color_dict[color]
 
+        d_bounces = lookup(key, ['up', 'down'], [1, -1])
+        if d_bounces is not None:
+            self.bounces[cid] += d_bounces
+
+        if self.cid == cid: # don't want every client updating server's state at the same time!
+            self.update_server_state(post=False)
+
     def sound(self, pitch):
+        """
+        Play a sound when a PhysicsBubble collides with a collidable object.
+        """
         note = NoteGenerator(pitch, 1, 'sine')
         env = Envelope(note, 0.01, 1, 0.2, 2)
         self.mixer.add(env)
 
     def display_controls(self):
-        info = 'pitch: {}'.format(self.pitch[self.cid])
-        return info
+        """
+        Provides additional info specific to this module to go on the top-left label.
+        """
+        if self.display:
+            info = 'pitch: {}\n'.format(self.pitch[self.cid])
+            info += 'bounces: {}\n'.format(self.bounces[self.cid])
+            return info
+        else:
+            return ''
 
     def on_update(self):
         self.bubbles.on_update()
+
+    def update_server_state(self, post=False):
+        """
+        Update server state. If post is True, relay this updated state to all clients.
+        """
+        state = {
+            'color': self.color,
+            'pitch': self.pitch,
+            'timbre': self.timbre,
+            'bounces': self.bounces
+        }
+        data = {'module': self.module_name, 'cid': self.cid, 'state': state, 'post': post}
+        self.client.emit('update_state', data)
+
+    def update_client_state(self, cid, state):
+        """
+        Update this handler's state.
+        """
+        if cid != self.cid: # this client already updated its own state
+            self.color = state['color']
+            self.pitch = state['pitch']
+            self.timbre = state['timbre']
+            self.bounces = state['bounces']
+
+    def sync_state(self, state):
+        """
+        Initial sync with the server's copy of module state.
+        We don't sync with hold_shape, hold_point, and hold_line because those objects are not
+        json-serializable and are short-term values anyway.
+        """
+        self.color = state['color']
+        self.pitch = state['pitch']
+        self.timbre = state['timbre']
+        self.bounces = state['bounces']
+
+        # after initial sync, add default values for this client
+        self.color[self.cid] = self.default_color
+        self.pitch[self.cid] = self.default_pitch
+        self.timbre[self.cid] = self.default_timbre
+        self.bounces[self.cid] = self.default_bounces
+
+        # now that default values are set, we can display this module's info
+        self.display = True
+
+        # update server with these default values
+        self.update_server_state(post=True)
