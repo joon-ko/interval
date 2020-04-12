@@ -9,18 +9,6 @@ socketio = SocketIO(app)
 
 client_count = 0 # number of clients connected
 
-@app.route('/randint')
-def test_random():
-    return str(random.randint(0, 10))
-
-@app.route('/get_state/<string:module>')
-def get_state(module):
-    """
-    Return the server's current state for a given module.
-    """
-    global state_dict
-    return state_dict[module]
-
 @socketio.on('connect')
 def connect():
     global client_count

@@ -81,7 +81,7 @@ class MainWidget(BaseWidget):
         key = keycode[1]
 
         # switch module using keys (for now)
-        module_name = lookup(key, 'q', [
+        module_name = lookup(key, 'z', [
             'PhysicsBubble'
         ])
         if module_name is not None:

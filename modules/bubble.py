@@ -2,13 +2,24 @@ import sys, os
 sys.path.insert(0, os.path.abspath('..'))
 
 from common.core import lookup
-from common.gfxutil import topleft_label, CEllipse, CLabelRect, AnimGroup
+from common.gfxutil import topleft_label, CEllipse, CRectangle, CLabelRect, AnimGroup
 from common.note import NoteGenerator, Envelope
 from kivy.graphics import Color, Line
 from kivy.graphics.instructions import InstructionGroup
 from kivy.core.window import Window
 
 import numpy as np
+
+def timbre_to_shape(timbre, pos):
+    if timbre == 'sine':
+        return CEllipse(cpos=pos, size=(80, 80), segments=20)
+    elif timbre == 'triangle':
+        return CEllipse(cpos=pos, size=(90, 90), segments=3)
+    elif timbre == 'square':
+        return CRectangle(cpos=pos, size=(80, 80))
+    elif timbre == 'sawtooth':
+        # square rotated 45 degrees
+        return CEllipse(cpos=pos, size=(90, 90), segments=4)
 
 class PhysicsBubble(InstructionGroup):
     """
@@ -17,7 +28,7 @@ class PhysicsBubble(InstructionGroup):
     """
     name = 'PhysicsBubble'
 
-    def __init__(self, pos, vel, pitch, color, bounces, callback=None):
+    def __init__(self, pos, vel, pitch, timbre, color, bounces, callback=None):
         super(PhysicsBubble, self).__init__()
 
         self.r = 40
@@ -25,12 +36,13 @@ class PhysicsBubble(InstructionGroup):
         self.vel = 2 * np.array(vel, dtype=np.float)
 
         self.pitch = pitch
+        self.timbre = timbre
         self.color = Color(*color)
         self.text_color = Color(0, 0, 0)
         self.bounces = bounces
 
         self.text = CLabelRect(cpos=pos, text=str(self.bounces))
-        self.bubble = CEllipse(cpos=pos, csize=(80, 80))
+        self.bubble = timbre_to_shape(self.timbre, pos)
 
         self.add(self.color)
         self.add(self.bubble)
@@ -45,7 +57,7 @@ class PhysicsBubble(InstructionGroup):
 
         if self.bounces != 0:
             if self.check_for_collisions() and self.callback is not None:
-                self.callback(self.pitch)
+                self.callback(self.pitch, self.timbre)
 
         self.bubble.set_cpos(self.pos)
         self.text.set_cpos(self.pos)
@@ -143,7 +155,7 @@ class PhysicsBubbleHandler(object):
         Start drawing the drag line and preview of the PhysicsBubble.
         """
         self.hold_point[cid] = pos
-        self.hold_shape[cid] = CEllipse(cpos=pos, csize=(80, 80))
+        self.hold_shape[cid] = timbre_to_shape(self.timbre[cid], pos)
         self.hold_line[cid] = Line(points=(*pos, *pos), width=3)
         self.text[cid] = CLabelRect(cpos=pos, text=str(self.bounces[cid]))
 
@@ -180,10 +192,11 @@ class PhysicsBubbleHandler(object):
             self.bounces[cid] = self.default_bounces
 
         pitch = self.pitch[cid]
+        timbre = self.timbre[cid]
         color = self.color[cid]
         bounces = self.bounces[cid]
 
-        bubble = PhysicsBubble(pos, vel, pitch, color, bounces, callback=self.sound)
+        bubble = PhysicsBubble(pos, vel, pitch, timbre, color, bounces, callback=self.sound)
         self.bubbles.add(bubble)
 
     def on_key_down(self, cid, key):
@@ -199,14 +212,18 @@ class PhysicsBubbleHandler(object):
         if d_bounces is not None:
             self.bounces[cid] += d_bounces
 
+        timbre = lookup(key, 'qwer', ['sine', 'square', 'triangle', 'sawtooth'])
+        if timbre is not None:
+            self.timbre[cid] = timbre
+
         if self.cid == cid: # don't want every client updating server's state at the same time!
             self.update_server_state(post=False)
 
-    def sound(self, pitch):
+    def sound(self, pitch, timbre):
         """
         Play a sound when a PhysicsBubble collides with a collidable object.
         """
-        note = NoteGenerator(pitch, 1, 'sine')
+        note = NoteGenerator(pitch, 1, timbre)
         env = Envelope(note, 0.01, 1, 0.2, 2)
         self.mixer.add(env)
 
@@ -216,6 +233,7 @@ class PhysicsBubbleHandler(object):
         """
         if self.display:
             info = 'pitch: {}\n'.format(self.pitch[self.cid])
+            info += 'timbre: {}\n'.format(self.timbre[self.cid])
             info += 'bounces: {}\n'.format(self.bounces[self.cid])
             return info
         else:
