@@ -11,3 +11,12 @@
 2. clone and cd into this repository.
 3. `pip install -r requirements.txt`
 4. run the server with `python server.py` and run the Kivy client with `python client.py`.
+
+#### [temporary] module control documentation
+
+- zx: switch sound modules
+- *PhysicsBubble*
+  - 1-8: select MIDI pitch
+  - qwer: select timbre
+  - up/down: increase/decrease number of bounces
+  - g: toggle gravity
