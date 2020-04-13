@@ -5,9 +5,10 @@ import requests
 import socketio
 
 from common.audio import Audio
-from common.core import BaseWidget, run, lookup
+from common.core import run, lookup
 from common.gfxutil import topleft_label, resize_topleft_label
 from common.mixer import Mixer
+from common.screen import ScreenManager, Screen
 from kivy.core.window import Window
 
 from modules.bubble import PhysicsBubble, PhysicsBubbleHandler
@@ -23,9 +24,9 @@ client.connect(server_url)
 # functions, especially module handler functions, to make sure all users are synced.
 client_id = client.sid
 
-class MainWidget(BaseWidget):
-    def __init__(self):
-        super(MainWidget, self).__init__()
+class MainScreen(Screen):
+    def __init__(self, **kwargs):
+        super(MainScreen, self).__init__(**kwargs)
 
         self.info = topleft_label()
         self.add_widget(self.info)
@@ -40,10 +41,10 @@ class MainWidget(BaseWidget):
         global client, client_id
         client.emit('update_count') # get the updated number of connected clients
 
-        # since putting all our sound module code in MainWidget would be a nightmare, we've
+        # since putting all our sound module code in MainScreen would be a nightmare, we've
         # modularized our modules into separate files. each module has two classes, the sound
         # module itself and its handler class. the handler class is essentially a wrapper of
-        # many of MainWidget's important event functions (e.g. on_touch_down) that keeps track
+        # many of MainScreen's important event functions (e.g. on_touch_down) that keeps track
         # of all variables related to that sound module for every connected client.
         self.module_dict = {
             'PhysicsBubble': PhysicsBubble,
@@ -125,46 +126,46 @@ class MainWidget(BaseWidget):
 
 @client.on('update_count')
 def update_count(data):
-    widget.update_count(data['count'])
+    main.update_count(data['count'])
 
 @client.on('sync_module_state')
 def sync_module_state(data):
     module_str = data['module']
-    handler = widget.module_handlers[module_str]
+    handler = main.module_handlers[module_str]
     handler.sync_state(data['state'])
 
 @client.on('update_state')
 def update_client_state(data):
     module_str, state, cid = data['module'], data['state'], data['cid']
-    handler = widget.module_handlers[module_str]
+    handler = main.module_handlers[module_str]
     handler.update_client_state(cid, state)
 
 @client.on('touch_down')
 def on_touch_down(data):
     module_str = data['module']
-    handler = widget.module_handlers[module_str]
+    handler = main.module_handlers[module_str]
     handler.on_touch_down(data['cid'], data['pos'])
 
 @client.on('touch_move')
 def on_touch_move(data):
     module_str = data['module']
-    handler = widget.module_handlers[module_str]
+    handler = main.module_handlers[module_str]
     handler.on_touch_move(data['cid'], data['pos'])
 
 @client.on('touch_up')
 def on_touch_up(data):
     module_str = data['module']
-    handler = widget.module_handlers[module_str]
+    handler = main.module_handlers[module_str]
     handler.on_touch_up(data['cid'], data['pos'])
 
 @client.on('key_down')
 def on_key_down(data):
     module_str = data['module']
-    handler = widget.module_handlers[module_str]
+    handler = main.module_handlers[module_str]
     handler.on_key_down(data['cid'], data['key'])
 
 if __name__ == "__main__":
-    # we need an instance of MainWidget() to make handling socket events easier.
-    # run() in core.py has been modified as a consequence.
-    widget = MainWidget()
-    run(widget)
+    sm = ScreenManager()
+    main = MainScreen(name='main')
+    sm.add_screen(main)
+    run(sm)
