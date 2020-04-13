@@ -11,6 +11,7 @@ from common.mixer import Mixer
 from kivy.core.window import Window
 
 from modules.bubble import PhysicsBubble, PhysicsBubbleHandler
+from modules.block import SoundBlock, SoundBlockHandler
 
 
 
@@ -46,9 +47,11 @@ class MainWidget(BaseWidget):
         # of all variables related to that sound module for every connected client.
         self.module_dict = {
             'PhysicsBubble': PhysicsBubble,
+            'SoundBlock': SoundBlock
         }
         self.module_handlers = {
             'PhysicsBubble': PhysicsBubbleHandler(self.canvas, self.mixer, client, client_id),
+            'SoundBlock': SoundBlockHandler(self.canvas, self.mixer, client, client_id)
         }
 
         # name a default starting module and handler
@@ -56,7 +59,7 @@ class MainWidget(BaseWidget):
         self.module_handler = self.module_handlers[self.module.name]
 
         # sync with existing server state
-        client.emit('sync_state', {'module': self.module.name})
+        client.emit('sync_module_state', {'module': self.module.name})
 
     def on_touch_down(self, touch):
         if touch.button != 'left':
@@ -88,8 +91,9 @@ class MainWidget(BaseWidget):
         key = keycode[1]
 
         # switch module using keys (for now)
-        module_name = lookup(key, 'z', [
-            'PhysicsBubble'
+        module_name = lookup(key, 'zx', [
+            'PhysicsBubble',
+            'SoundBlock'
         ])
         if module_name is not None:
             self.module = self.module_dict[module_name]
@@ -123,16 +127,17 @@ class MainWidget(BaseWidget):
 def update_count(data):
     widget.update_count(data['count'])
 
-@client.on('sync_state')
-def sync_state(data):
+@client.on('sync_module_state')
+def sync_module_state(data):
     module_str = data['module']
     handler = widget.module_handlers[module_str]
     handler.sync_state(data['state'])
 
 @client.on('update_state')
 def update_client_state(data):
-    state, cid = data['state'], data['cid']
-    widget.module_handler.update_client_state(cid, state)
+    module_str, state, cid = data['module'], data['state'], data['cid']
+    handler = widget.module_handlers[module_str]
+    handler.update_client_state(cid, state)
 
 @client.on('touch_down')
 def on_touch_down(data):

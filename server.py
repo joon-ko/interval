@@ -28,15 +28,15 @@ def update_count():
     global client_count
     emit('update_count', {'count': client_count}, broadcast=True)
 
-@socketio.on('sync_state')
-def sync_state(data):
+@socketio.on('sync_module_state')
+def sync_module_state(data):
     """
     Syncs the state of a new connection with the server's current state for the given module.
     """
     global state_dict
     module_str = data['module']
     server_state = state_dict[module_str]
-    emit('sync_state', {'module': module_str, 'state': server_state})
+    emit('sync_module_state', {'module': module_str, 'state': server_state})
 
 @socketio.on('update_state')
 def update_state(data):
@@ -50,7 +50,8 @@ def update_state(data):
     server_state.update(client_state)
 
     if post:
-        emit('update_state', {'cid': cid, 'state': server_state}, broadcast=True)
+        send_data = {'cid': cid, 'module': module_str, 'state': server_state}
+        emit('update_state', send_data, broadcast=True)
 
 @socketio.on('touch_down')
 def on_touch_down(data):
