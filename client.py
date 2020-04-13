@@ -10,13 +10,15 @@ from common.gfxutil import topleft_label, resize_topleft_label
 from common.mixer import Mixer
 from common.screen import ScreenManager, Screen
 from kivy.core.window import Window
+from kivy.graphics import Color, Ellipse, Rectangle, Line
 
 from modules.bubble import PhysicsBubble, PhysicsBubbleHandler
 from modules.block import SoundBlock, SoundBlockHandler
 
+from kivy.uix.button import Button
+from kivy.core.image import Image
 
-
-server_url = 'http://173.52.37.59:8000'
+server_url = 'http://localhost:8000'
 client = socketio.Client()
 client.connect(server_url)
 
@@ -124,6 +126,22 @@ class MainScreen(Screen):
     def update_count(self, count):
         self.count = count
 
+class StartScreen(Screen):
+    def __init__(self, **kwargs):
+        super(StartScreen, self).__init__(**kwargs)
+
+        self.create = Button(text='Create Room', font_size=15, pos = (Window.width/2 - 50, Window.height/2 - 175))
+        self.create.bind(on_release= lambda x: self.switch_to('main'))
+        self.add_widget(self.create)
+
+        self.canvas.add(Color(1,1,1))
+        self.img = Rectangle(pos=(Window.width/2 - 50, Window.height/2), size=(300,300), texture=Image('logo.png').texture)
+        self.canvas.add(self.img)
+
+    def on_layout(self, win_size):
+        self.img.pos = (Window.width/2 - 150, Window.height/2 - 50) 
+        self.create.pos = (Window.width/2 - 50, Window.height/2 - 175)
+
 @client.on('update_count')
 def update_count(data):
     main.update_count(data['count'])
@@ -166,6 +184,8 @@ def on_key_down(data):
 
 if __name__ == "__main__":
     sm = ScreenManager()
+    start = StartScreen(name='start')
     main = MainScreen(name='main')
+    sm.add_screen(start)
     sm.add_screen(main)
     run(sm)
