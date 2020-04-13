@@ -79,7 +79,8 @@ PhysicsBubbleState = {
     'color': {},
     'pitch': {},
     'timbre': {},
-    'bounces': {}
+    'bounces': {},
+    'gravity': {}
 }
 
 state_dict = {

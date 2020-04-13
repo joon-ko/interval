@@ -21,6 +21,9 @@ def timbre_to_shape(timbre, pos):
         # square rotated 45 degrees
         return CEllipse(cpos=pos, size=(90, 90), segments=4)
 
+downwards_gravity = np.array((0, -1800))
+damping_factor = 0.85
+
 class PhysicsBubble(InstructionGroup):
     """
     This module is a drag-and-release physics-based bubble that plays a sound upon colliding with
@@ -28,7 +31,17 @@ class PhysicsBubble(InstructionGroup):
     """
     name = 'PhysicsBubble'
 
-    def __init__(self, pos, vel, pitch, timbre, color, bounces, callback=None):
+    def __init__(self, pos, vel, pitch, timbre, color, bounces, gravity=False, callback=None):
+        """
+        :param pos: initial position
+        :param vel: initial velocity
+        :param pitch: MIDI pitch value, where 60 is middle C
+        :param timbre: type of waveform, e.g. 'sine' or 'sawtooth'
+        :param color: 3-tuple of RGB color
+        :param bounces: number of times the bubble bounces before fading away
+        :param gravity: whether or not the bubble is subjected to downwards gravity
+        :param callback: the sound function that is called when the bubble bounces
+        """
         super(PhysicsBubble, self).__init__()
 
         self.r = 40
@@ -40,6 +53,7 @@ class PhysicsBubble(InstructionGroup):
         self.color = Color(*color)
         self.text_color = Color(0, 0, 0)
         self.bounces = bounces
+        self.gravity = gravity
 
         self.text = CLabelRect(cpos=pos, text=str(self.bounces))
         self.bubble = timbre_to_shape(self.timbre, pos)
@@ -53,7 +67,11 @@ class PhysicsBubble(InstructionGroup):
         self.on_update(0)
 
     def on_update(self, dt):
-        self.pos += self.vel * dt
+        if self.gravity:
+            self.vel += downwards_gravity * dt
+            self.pos += self.vel * dt
+        else:
+            self.pos += self.vel * dt
 
         if self.bounces != 0:
             if self.check_for_collisions() and self.callback is not None:
@@ -62,12 +80,12 @@ class PhysicsBubble(InstructionGroup):
         self.bubble.set_cpos(self.pos)
         self.text.set_cpos(self.pos)
 
-        return True
+        return not self.check_offscreen()
 
     def check_for_collisions(self):
         # collision with bottom
         if self.pos[1] - self.r < 0:
-            self.vel[1] = -self.vel[1]
+            self.vel[1] = -self.vel[1] * damping_factor if self.gravity else -self.vel[1]
             self.pos[1] = self.r
             self.bounces -= 1
             self.text.set_text(str(self.bounces))
@@ -98,10 +116,10 @@ class PhysicsBubble(InstructionGroup):
             return True
 
     def check_offscreen(self):
-        return (self.pos[0] - self.radius > Window.width) or \
-               (self.pos[0] + self.radius < 0) or \
-               (self.pos[1] + self.radius < 0) or \
-               (self.pos[1] - self.radius > Window.height)
+        return (self.pos[0] - self.r > Window.width) or \
+               (self.pos[0] + self.r < 0) or \
+               (self.pos[1] + self.r < 0) or \
+               (self.pos[1] - self.r > Window.height)
 
 class PhysicsBubbleHandler(object):
     """
@@ -122,6 +140,7 @@ class PhysicsBubbleHandler(object):
         self.hold_point = {}
         self.hold_shape = {}
         self.text = {}
+        self.text_color = Color(0, 0, 0)
 
         # TODO: update to use nisha's proposed pastel color palette
         self.color_dict = {
@@ -140,12 +159,13 @@ class PhysicsBubbleHandler(object):
         self.default_pitch = self.pitch_list[0]
         self.default_timbre = 'sine'
         self.default_bounces = 5
-        self.text_color = Color(0, 0, 0)
+        self.default_gravity = False
 
         self.color = {}
         self.pitch = {}
         self.timbre = {}
         self.bounces = {}
+        self.gravity = {}
 
         # flag used to only display controls when this module is synced
         # see on_update() and sync_state()
@@ -195,8 +215,11 @@ class PhysicsBubbleHandler(object):
         timbre = self.timbre[cid]
         color = self.color[cid]
         bounces = self.bounces[cid]
+        gravity = self.gravity[cid]
 
-        bubble = PhysicsBubble(pos, vel, pitch, timbre, color, bounces, callback=self.sound)
+        bubble = PhysicsBubble(
+            pos, vel, pitch, timbre, color, bounces, gravity=gravity, callback=self.sound
+        )
         self.bubbles.add(bubble)
 
     def on_key_down(self, cid, key):
@@ -215,6 +238,9 @@ class PhysicsBubbleHandler(object):
         timbre = lookup(key, 'qwer', ['sine', 'square', 'triangle', 'sawtooth'])
         if timbre is not None:
             self.timbre[cid] = timbre
+
+        if key == 'g': # toggle gravity
+            self.gravity[cid] = not self.gravity[cid]
 
         # other clients should update their state to reflect this client's new selection.
         if self.cid == cid: # don't want every client updating server's state at the same time!
@@ -236,6 +262,7 @@ class PhysicsBubbleHandler(object):
             info = 'pitch: {}\n'.format(self.pitch[self.cid])
             info += 'timbre: {}\n'.format(self.timbre[self.cid])
             info += 'bounces: {}\n'.format(self.bounces[self.cid])
+            info += 'gravity: {}\n'.format(self.gravity[self.cid])
             return info
         else:
             return ''
@@ -251,7 +278,8 @@ class PhysicsBubbleHandler(object):
             'color': self.color,
             'pitch': self.pitch,
             'timbre': self.timbre,
-            'bounces': self.bounces
+            'bounces': self.bounces,
+            'gravity': self.gravity
         }
         data = {'module': self.module_name, 'cid': self.cid, 'state': state, 'post': post}
         self.client.emit('update_state', data)
@@ -265,6 +293,7 @@ class PhysicsBubbleHandler(object):
             self.pitch = state['pitch']
             self.timbre = state['timbre']
             self.bounces = state['bounces']
+            self.gravity = state['gravity']
 
     def sync_state(self, state):
         """
@@ -276,12 +305,14 @@ class PhysicsBubbleHandler(object):
         self.pitch = state['pitch']
         self.timbre = state['timbre']
         self.bounces = state['bounces']
+        self.gravity = state['gravity']
 
         # after initial sync, add default values for this client
         self.color[self.cid] = self.default_color
         self.pitch[self.cid] = self.default_pitch
         self.timbre[self.cid] = self.default_timbre
         self.bounces[self.cid] = self.default_bounces
+        self.gravity[self.cid] = self.default_gravity
 
         # now that default values are set, we can display this module's info
         self.display = True
