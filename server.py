@@ -11,6 +11,9 @@ client_count = 0 # number of clients connected
 
 @socketio.on('connect')
 def connect():
+    """
+    This function is run every time a new client connects to the server.
+    """
     global client_count
     client_count += 1
 
@@ -70,7 +73,7 @@ def on_key_down(data):
 # state variables #
 ###################
 
-# We don't sync with hold_shape, hold_point, and hold_line because those objects are not
+# we don't sync with hold_shape, hold_point, and hold_line because those objects are not
 # json-serializable and are short-term values anyway.
 PhysicsBubbleState = {
     'color': {},

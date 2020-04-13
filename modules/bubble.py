@@ -115,11 +115,15 @@ class PhysicsBubbleHandler(object):
         self.client = client
         self.cid = client_id
 
+        # many variables here are dicts because a user's module handler needs to keep track of
+        # not just its own variables, but other users' variables as well! so we use dictionaries
+        # with client ids as the keys.
         self.hold_line = {}
         self.hold_point = {}
         self.hold_shape = {}
         self.text = {}
 
+        # TODO: update to use nisha's proposed pastel color palette
         self.color_dict = {
             'red': (255/255, 61/255, 40/255),
             'orange': (252/255, 144/255, 22/255),
@@ -181,15 +185,11 @@ class PhysicsBubbleHandler(object):
         self.canvas.remove(self.text[cid])
         self.canvas.remove(self.hold_line[cid])
 
+        # calculate velocity
         hold_point = self.hold_point[cid]
         dx = pos[0] - hold_point[0]
         dy = pos[1] - hold_point[1]
         vel = (-dx, -dy)
-
-        if cid not in self.pitch:
-            self.pitch[cid] = self.pitch_list[0]
-        if cid not in self.bounces:
-            self.bounces[cid] = self.default_bounces
 
         pitch = self.pitch[cid]
         timbre = self.timbre[cid]
@@ -216,6 +216,7 @@ class PhysicsBubbleHandler(object):
         if timbre is not None:
             self.timbre[cid] = timbre
 
+        # other clients should update their state to reflect this client's new selection.
         if self.cid == cid: # don't want every client updating server's state at the same time!
             self.update_server_state(post=False)
 
@@ -286,4 +287,6 @@ class PhysicsBubbleHandler(object):
         self.display = True
 
         # update server with these default values
+        # post=True here because we want all other clients' states to update with this client's
+        # default values.
         self.update_server_state(post=True)

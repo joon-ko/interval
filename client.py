@@ -17,6 +17,9 @@ from modules.bubble import PhysicsBubble, PhysicsBubbleHandler
 server_url = 'http://173.52.37.59:8000'
 client = socketio.Client()
 client.connect(server_url)
+
+# each client gets a unique client id upon connecting. we use this client id in many
+# functions, especially module handler functions, to make sure all users are synced.
 client_id = client.sid
 
 class MainWidget(BaseWidget):
@@ -26,8 +29,7 @@ class MainWidget(BaseWidget):
         self.info = topleft_label()
         self.add_widget(self.info)
 
-        self.response = None
-        self.count = 0
+        self.count = 0 # total number of connected clients
 
         self.audio = Audio(2)
         self.mixer = Mixer()
@@ -35,8 +37,13 @@ class MainWidget(BaseWidget):
         self.audio.set_generator(self.mixer)
 
         global client, client_id
-        client.emit('update_count')
+        client.emit('update_count') # get the updated number of connected clients
 
+        # since putting all our sound module code in MainWidget would be a nightmare, we've
+        # modularized our modules into separate files. each module has two classes, the sound
+        # module itself and its handler class. the handler class is essentially a wrapper of
+        # many of MainWidget's important event functions (e.g. on_touch_down) that keeps track
+        # of all variables related to that sound module for every connected client.
         self.module_dict = {
             'PhysicsBubble': PhysicsBubble,
         }
