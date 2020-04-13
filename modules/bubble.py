@@ -2,7 +2,7 @@ import sys, os
 sys.path.insert(0, os.path.abspath('..'))
 
 from common.core import lookup
-from common.gfxutil import topleft_label, CEllipse, CRectangle, CLabelRect, AnimGroup
+from common.gfxutil import topleft_label, CEllipse, CRectangle, CLabelRect, AnimGroup, KFAnim
 from common.note import NoteGenerator, Envelope
 from kivy.graphics import Color, Line
 from kivy.graphics.instructions import InstructionGroup
@@ -54,6 +54,7 @@ class PhysicsBubble(InstructionGroup):
         self.text_color = Color(0, 0, 0)
         self.bounces = bounces
         self.gravity = gravity
+        self.callback = callback
 
         self.text = CLabelRect(cpos=pos, text=str(self.bounces))
         self.bubble = timbre_to_shape(self.timbre, pos)
@@ -63,7 +64,10 @@ class PhysicsBubble(InstructionGroup):
         self.add(self.text_color)
         self.add(self.text)
 
-        self.callback = callback
+        # have the bubble fade away when self.bounces = 0
+        self.fade_anim = KFAnim((0, 1), (0.25, 0))
+        self.time = 0
+
         self.on_update(0)
 
     def on_update(self, dt):
@@ -73,14 +77,17 @@ class PhysicsBubble(InstructionGroup):
         else:
             self.pos += self.vel * dt
 
-        if self.bounces != 0:
+        if self.bounces > 0:
             if self.check_for_collisions() and self.callback is not None:
                 self.callback(self.pitch, self.timbre)
+        else:
+            self.color.a = self.fade_anim.eval(self.time)
+            self.time += dt
 
         self.bubble.set_cpos(self.pos)
         self.text.set_cpos(self.pos)
 
-        return not self.check_offscreen()
+        return self.fade_anim.is_active(self.time)
 
     def check_for_collisions(self):
         # collision with bottom
@@ -114,12 +121,6 @@ class PhysicsBubble(InstructionGroup):
             self.bounces -= 1
             self.text.set_text(str(self.bounces))
             return True
-
-    def check_offscreen(self):
-        return (self.pos[0] - self.r > Window.width) or \
-               (self.pos[0] + self.r < 0) or \
-               (self.pos[1] + self.r < 0) or \
-               (self.pos[1] - self.r > Window.height)
 
 class PhysicsBubbleHandler(object):
     """
