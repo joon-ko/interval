@@ -34,10 +34,6 @@ class MainScreen(Screen):
     def __init__(self, **kwargs):
         super(MainScreen, self).__init__(**kwargs)
 
-        self.count = 0 # total number of connected clients
-        global client, client_id
-        client.emit('update_count') # get the updated number of connected clients
-
         self.info = topleft_label()
         self.add_widget(self.info)
 
@@ -72,8 +68,6 @@ class MainScreen(Screen):
     def on_touch_down(self, touch):
         if touch.button != 'left':
             return
-        if not self.sandbox.in_bounds(touch.pos):
-            return
 
         global client, client_id
         data = {'cid': client_id, 'module': self.module.name, 'pos': touch.pos}
@@ -82,8 +76,6 @@ class MainScreen(Screen):
     def on_touch_move(self, touch):
         if touch.button != 'left':
             return
-        if not self.sandbox.in_bounds(touch.pos):
-            return
 
         global client, client_id
         data = {'cid': client_id, 'module': self.module.name, 'pos': touch.pos}
@@ -91,8 +83,6 @@ class MainScreen(Screen):
 
     def on_touch_up(self, touch):
         if touch.button != 'left':
-            return
-        if not self.sandbox.in_bounds(touch.pos):
             return
 
         global client, client_id
@@ -120,8 +110,7 @@ class MainScreen(Screen):
         for _, handler in self.module_handlers.items():
             handler.on_update()
 
-        self.info.text = '# connected: {}\n'.format(self.count)
-        self.info.text += 'module: {}\n'.format(self.module.name)
+        self.info.text = 'module: {}\n\n'.format(self.module.name)
         self.info.text += self.module_handler.display_controls()
 
     def on_layout(self, win_size):
@@ -212,9 +201,8 @@ class Sandbox(object):
                (mouse_pos[1] >= self.pos[1]) and \
                (mouse_pos[1] <= self.pos[1] + self.height)
 
-@client.on('update_count')
-def update_count(data):
-    main.update_count(data['count'])
+    def __contains__(self, key):
+        return key in self.canvas.children
 
 @client.on('sync_module_state')
 def sync_module_state(data):

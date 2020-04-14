@@ -21,12 +21,6 @@ def connect():
 def disconnect():
     global client_count
     client_count -= 1
-    emit('update_count', {'count': client_count}, broadcast=True)
-
-@socketio.on('update_count')
-def update_count():
-    global client_count
-    emit('update_count', {'count': client_count}, broadcast=True)
 
 @socketio.on('sync_module_state')
 def sync_module_state(data):
