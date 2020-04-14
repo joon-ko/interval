@@ -121,21 +121,49 @@ class MainScreen(Screen):
     def update_count(self, count):
         self.count = count
 
+def in_bounds(mouse_pos, button_pos, button_size):
+    if mouse_pos[0] >= (button_pos[0]): #lower x bound
+        if mouse_pos[0] <= (button_pos[0] + button_size[0]): #upper x bound
+            if mouse_pos[1] >= (button_pos[1]): #lower y bound
+                if mouse_pos[1] <= (button_pos[1] + button_size[1]): #upper x bound
+                    return True
+    return False
+
 class StartScreen(Screen):
     def __init__(self, **kwargs):
         super(StartScreen, self).__init__(**kwargs)
 
-        self.create = Button(text='Create Room', font_size=15, pos = (Window.width/2 - 50, Window.height/2 - 175))
-        self.create.bind(on_release= lambda x: self.switch_to('main'))
-        self.add_widget(self.create)
+        #self.create = Button(text='Create Room', font_size=15, pos = (Window.width/2 - 50, Window.height/2 - 175))
+        #self.create.bind(on_release= lambda x: self.switch_to('main'))
+        #self.add_widget(self.create)
 
         self.canvas.add(Color(1,1,1))
-        self.img = Rectangle(pos=(Window.width/2 - 50, Window.height/2), size=(300,300), texture=Image('images/logo.png').texture)
+        self.img = Rectangle(pos=(Window.width/2 - 150, Window.height/2), size=(300,300), texture=Image('images/logo.png').texture)
+        self.create = Rectangle(pos=(Window.width/2 - 75, Window.height/2 - (325/2)), size=(150,75), texture=Image('ui/buttons/start-unclicked.png').texture)
+        self.create_click = Rectangle(pos=(Window.width/2 - 75, Window.height/2 - (325/2)), size=(150,75), texture=Image('ui/buttons/start-clicked.png').texture)
         self.canvas.add(self.img)
+        self.canvas.add(self.create)
 
     def on_layout(self, win_size):
         self.img.pos = (Window.width/2 - 150, Window.height/2 - 50) 
-        self.create.pos = (Window.width/2 - 50, Window.height/2 - 175)
+        self.create.pos = (Window.width/2 - 75, Window.height/2 - (325/2))
+        if self.create_click in self.children:
+            self.create_click.pos = (Window.width/2 - 75, Window.height/2 - (325/2))
+
+    def on_update(self):
+        mouse_pos = Window.mouse_pos
+        #print("MOUSE POS ", mouse_pos, " POS ", self.create.pos, " x BUF ", self.create.size[0]/2, " Y BUF ", self.create.size[1]/2)
+        if in_bounds(mouse_pos, self.create.pos, self.create.size):
+            self.canvas.add(self.create_click)
+            return True   
+        else:
+            if self.create_click in self.canvas.children:
+                self.canvas.remove(self.create_click)
+                return False
+
+    def on_touch_down(self, touch):
+        if in_bounds(touch.pos, self.create_click.pos, self.create_click.size):
+            self.switch_to('main')
 
 @client.on('update_count')
 def update_count(data):
