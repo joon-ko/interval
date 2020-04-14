@@ -154,8 +154,9 @@ class StartScreen(Screen):
         mouse_pos = Window.mouse_pos
         #print("MOUSE POS ", mouse_pos, " POS ", self.create.pos, " x BUF ", self.create.size[0]/2, " Y BUF ", self.create.size[1]/2)
         if in_bounds(mouse_pos, self.create.pos, self.create.size):
-            self.canvas.add(self.create_click)
-            return True   
+            if self.create_click not in self.canvas.children:
+                self.canvas.add(self.create_click)
+                return True   
         else:
             if self.create_click in self.canvas.children:
                 self.canvas.remove(self.create_click)
