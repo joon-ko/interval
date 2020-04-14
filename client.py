@@ -5,22 +5,23 @@ import requests
 import socketio
 
 from common.audio import Audio
-from common.core import run, lookup
+from common.core import run, lookup, register_terminate_func
 from common.gfxutil import topleft_label, resize_topleft_label
 from common.mixer import Mixer
 from common.screen import ScreenManager, Screen
+from kivy.core.image import Image
 from kivy.core.window import Window
 from kivy.graphics import Color, Ellipse, Rectangle, Line
+from kivy.uix.button import Button
 
 from modules.bubble import PhysicsBubble, PhysicsBubbleHandler
 from modules.block import SoundBlock, SoundBlockHandler
 
-from kivy.uix.button import Button
-from kivy.core.image import Image
-
 server_url = 'http://localhost:8000'
+
 client = socketio.Client()
 client.connect(server_url)
+register_terminate_func(client.disconnect)
 
 # each client gets a unique client id upon connecting. we use this client id in many
 # functions, especially module handler functions, to make sure all users are synced.
@@ -117,12 +118,6 @@ class MainScreen(Screen):
     def on_layout(self, win_size):
         resize_topleft_label(self.info)
 
-    def on_close(self):
-        # disconnect the client before kivy shuts down to prevent hanging connections.
-        # possibly look into using core.py's register_terminate_func() instead?
-        global client
-        client.disconnect()
-
     def update_count(self, count):
         self.count = count
 
@@ -135,7 +130,7 @@ class StartScreen(Screen):
         self.add_widget(self.create)
 
         self.canvas.add(Color(1,1,1))
-        self.img = Rectangle(pos=(Window.width/2 - 50, Window.height/2), size=(300,300), texture=Image('logo.png').texture)
+        self.img = Rectangle(pos=(Window.width/2 - 50, Window.height/2), size=(300,300), texture=Image('images/logo.png').texture)
         self.canvas.add(self.img)
 
     def on_layout(self, win_size):
