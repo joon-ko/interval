@@ -85,7 +85,9 @@ class PhysicsBubble(InstructionGroup):
         if self.bounces > 0:
             if self.check_for_collisions() and self.callback is not None:
                 self.callback(self.pitch, self.timbre)
-        else:
+        # second condition checks if bubble hasn't been moving but there's no gravity --
+        # since bubble would be on the screen forever without making sound, fade it away
+        if self.bounces <= 0 or (not self.gravity and np.linalg.norm(self.vel) == 0):
             self.color.a = self.fade_anim.eval(self.time)
             self.time += dt
 

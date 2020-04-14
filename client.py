@@ -134,6 +134,8 @@ class StartScreen(Screen):
     def __init__(self, **kwargs):
         super(StartScreen, self).__init__(**kwargs)
 
+        self.clicked = False
+
         self.canvas.add(Color(1,1,1))
         self.img = Rectangle(
             pos=(Window.width/2 - 150, Window.height/2),
@@ -172,7 +174,14 @@ class StartScreen(Screen):
 
     def on_touch_down(self, touch):
         if self.in_bounds(touch.pos, self.create_click.pos, self.create_click.size):
-            self.switch_to('main')
+            self.clicked = True
+
+    def on_touch_up(self, touch):
+        if self.in_bounds(touch.pos, self.create_click.pos, self.create_click.size):
+            if self.clicked:
+                sm.switch_to('main')
+        else:
+            self.clicked = False
 
     def in_bounds(self, mouse_pos, button_pos, button_size):
         return (mouse_pos[0] >= button_pos[0]) and \
