@@ -7,7 +7,6 @@ from common.note import NoteGenerator, Envelope
 from kivy.graphics import Color, Line, Rectangle
 from kivy.graphics.instructions import InstructionGroup
 from kivy.core.image import Image
-from kivy.core.window import Window
 
 import numpy as np
 
@@ -32,8 +31,11 @@ class PhysicsBubble(InstructionGroup):
     """
     name = 'PhysicsBubble'
 
-    def __init__(self, pos, vel, pitch, timbre, color, bounces, gravity=False, callback=None):
+    def __init__(
+        self, sandbox, pos, vel, pitch, timbre, color, bounces, gravity=False, callback=None
+    ):
         """
+        :param sandbox: client's sandbox
         :param pos: initial position
         :param vel: initial velocity
         :param pitch: MIDI pitch value, where 60 is middle C
@@ -44,6 +46,8 @@ class PhysicsBubble(InstructionGroup):
         :param callback: the sound function that is called when the bubble bounces
         """
         super(PhysicsBubble, self).__init__()
+
+        self.sandbox = sandbox
 
         self.r = 40
         self.pos = np.array(pos, dtype=np.float)
@@ -91,34 +95,39 @@ class PhysicsBubble(InstructionGroup):
         return self.fade_anim.is_active(self.time)
 
     def check_for_collisions(self):
+        bottom = self.sandbox.pos[1]
+        top = self.sandbox.pos[1] + self.sandbox.height
+        left = self.sandbox.pos[0]
+        right = self.sandbox.pos[0] + self.sandbox.width
+
         # collision with bottom
-        if self.pos[1] - self.r < 0:
+        if self.pos[1] - self.r < bottom:
             self.vel[1] = -self.vel[1] * damping_factor if self.gravity else -self.vel[1]
-            self.pos[1] = self.r
+            self.pos[1] = bottom + self.r
             self.bounces -= 1
             self.text.set_text(str(self.bounces))
             return True
 
         # collision with top
-        if self.pos[1] + self.r > Window.height:
+        if self.pos[1] + self.r > top:
             self.vel[1] = -self.vel[1]
-            self.pos[1] = Window.height - self.r
+            self.pos[1] = top - self.r
             self.bounces -= 1
             self.text.set_text(str(self.bounces))
             return True
 
         # collision with left
-        if self.pos[0] - self.r < 0:
+        if self.pos[0] - self.r < left:
             self.vel[0] = -self.vel[0]
-            self.pos[0] = self.r
+            self.pos[0] = left + self.r
             self.bounces -= 1
             self.text.set_text(str(self.bounces))
             return True
 
         # collision with right
-        if self.pos[0] + self.r > Window.width:
+        if self.pos[0] + self.r > right:
             self.vel[0] = -self.vel[0]
-            self.pos[0] = Window.width - self.r
+            self.pos[0] = right - self.r
             self.bounces -= 1
             self.text.set_text(str(self.bounces))
             return True
@@ -128,9 +137,9 @@ class PhysicsBubbleHandler(object):
     Handles user interaction and drawing of graphics before generating a PhysicsBubble.
     Also stores and updates all currently active PhysicsBubbles.
     """
-    def __init__(self, canvas, mixer, client, client_id):
+    def __init__(self, sandbox, mixer, client, client_id):
         self.module_name = 'PhysicsBubble'
-        self.canvas = canvas
+        self.sandbox = sandbox
         self.mixer = mixer
         self.client = client
         self.cid = client_id
@@ -174,7 +183,10 @@ class PhysicsBubbleHandler(object):
         self.display = False
 
         self.bubbles = AnimGroup()
-        self.canvas.add(self.bubbles)
+        self.sandbox.add(self.bubbles)
+
+        # test -- adding timbre select
+        self.sandbox.add(TimbreSelect(pos=(20, 700)))
 
     def on_touch_down(self, cid, pos):
         """
@@ -185,11 +197,11 @@ class PhysicsBubbleHandler(object):
         self.hold_line[cid] = Line(points=(*pos, *pos), width=3)
         self.text[cid] = CLabelRect(cpos=pos, text=str(self.bounces[cid]))
 
-        self.canvas.add(Color(*self.color[cid]))
-        self.canvas.add(self.hold_shape[cid])
-        self.canvas.add(self.hold_line[cid])
-        self.canvas.add(self.text_color)
-        self.canvas.add(self.text[cid])
+        self.sandbox.add(Color(*self.color[cid]))
+        self.sandbox.add(self.hold_shape[cid])
+        self.sandbox.add(self.hold_line[cid])
+        self.sandbox.add(self.text_color)
+        self.sandbox.add(self.text[cid])
 
     def on_touch_move(self, cid, pos):
         """
@@ -203,9 +215,9 @@ class PhysicsBubbleHandler(object):
         """
         Release the PhysicsBubble.
         """
-        self.canvas.remove(self.hold_shape[cid])
-        self.canvas.remove(self.text[cid])
-        self.canvas.remove(self.hold_line[cid])
+        self.sandbox.remove(self.hold_shape[cid])
+        self.sandbox.remove(self.text[cid])
+        self.sandbox.remove(self.hold_line[cid])
 
         # calculate velocity
         hold_point = self.hold_point[cid]
@@ -220,7 +232,8 @@ class PhysicsBubbleHandler(object):
         gravity = self.gravity[cid]
 
         bubble = PhysicsBubble(
-            pos, vel, pitch, timbre, color, bounces, gravity=gravity, callback=self.sound
+            self.sandbox, pos, vel, pitch, timbre, color, bounces,
+            gravity=gravity, callback=self.sound
         )
         self.bubbles.add(bubble)
 
@@ -334,7 +347,11 @@ class TimbreSelect(InstructionGroup):
         self.pos = pos
         self.margin = 20
         self.button_length = 64
-        self.size = (self.button_length*4 + self.margin*5, self.button_length + 2*self.margin)
+        self.title_height = 50 # height of the word 'timbre'
+        self.size = (
+            (4 * self.button_length) + (5 * self.margin),
+            self.button_length + (2 * self.margin) + self.title_height
+        )
 
         white = (239/255, 226/255, 222/255)
         self.border_color = Color(1, 0, 0) # red
@@ -383,3 +400,8 @@ class TimbreSelect(InstructionGroup):
         self.add(self.sawtooth_color)
         self.add(self.sawtooth_bg)
         self.add(self.sawtooth)
+
+        title_pos = (x + self.size[0]/2, y + self.size[1] - self.title_height/2 - self.margin/2)
+        self.title = CLabelRect(cpos=title_pos, text='timbre', font_size='18')
+        self.add(Color(*white))
+        self.add(self.title)

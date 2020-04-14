@@ -12,12 +12,15 @@ from common.screen import ScreenManager, Screen
 from kivy.core.image import Image
 from kivy.core.window import Window
 from kivy.graphics import Color, Ellipse, Rectangle, Line
+from kivy.graphics.instructions import InstructionGroup
 from kivy.uix.button import Button
 
 from modules.bubble import PhysicsBubble, PhysicsBubbleHandler
 from modules.block import SoundBlock, SoundBlockHandler
 
-server_url = 'http://localhost:8000'
+# warning: using localhost instead of public IP breaks the client if you click too fast!
+# server_url = 'http://localhost:8000'
+server_url = 'http://173.52.37.59:8000'
 
 client = socketio.Client()
 client.connect(server_url)
@@ -31,18 +34,19 @@ class MainScreen(Screen):
     def __init__(self, **kwargs):
         super(MainScreen, self).__init__(**kwargs)
 
+        self.count = 0 # total number of connected clients
+        global client, client_id
+        client.emit('update_count') # get the updated number of connected clients
+
         self.info = topleft_label()
         self.add_widget(self.info)
-
-        self.count = 0 # total number of connected clients
 
         self.audio = Audio(2)
         self.mixer = Mixer()
         self.mixer.set_gain(1.0)
         self.audio.set_generator(self.mixer)
 
-        global client, client_id
-        client.emit('update_count') # get the updated number of connected clients
+        self.sandbox = Sandbox(canvas=self.canvas, pos=(400, 0), size=(1200, 1200))
 
         # since putting all our sound module code in MainScreen would be a nightmare, we've
         # modularized our modules into separate files. each module has two classes, the sound
@@ -54,8 +58,8 @@ class MainScreen(Screen):
             'SoundBlock': SoundBlock
         }
         self.module_handlers = {
-            'PhysicsBubble': PhysicsBubbleHandler(self.canvas, self.mixer, client, client_id),
-            'SoundBlock': SoundBlockHandler(self.canvas, self.mixer, client, client_id)
+            'PhysicsBubble': PhysicsBubbleHandler(self.sandbox, self.mixer, client, client_id),
+            'SoundBlock': SoundBlockHandler(self.sandbox, self.mixer, client, client_id)
         }
 
         # name a default starting module and handler
@@ -68,14 +72,17 @@ class MainScreen(Screen):
     def on_touch_down(self, touch):
         if touch.button != 'left':
             return
+        if not self.sandbox.in_bounds(touch.pos):
+            return
 
         global client, client_id
-        # we send touch.pos instead because touch isn't json-serializable
         data = {'cid': client_id, 'module': self.module.name, 'pos': touch.pos}
         client.emit('touch_down', data)
 
     def on_touch_move(self, touch):
         if touch.button != 'left':
+            return
+        if not self.sandbox.in_bounds(touch.pos):
             return
 
         global client, client_id
@@ -84,6 +91,8 @@ class MainScreen(Screen):
 
     def on_touch_up(self, touch):
         if touch.button != 'left':
+            return
+        if not self.sandbox.in_bounds(touch.pos):
             return
 
         global client, client_id
@@ -170,6 +179,29 @@ class StartScreen(Screen):
                (mouse_pos[0] <= button_pos[0] + button_size[0]) and \
                (mouse_pos[1] >= button_pos[1]) and \
                (mouse_pos[1] <= button_pos[1] + button_size[1])
+
+class Sandbox(object):
+    def __init__(self, canvas, pos, size):
+        self.canvas = canvas
+        self.pos = pos
+        self.width, self.height = size
+
+        self.border_color = Color(1, 0, 0) # red
+        self.border = Line(rectangle=(*self.pos, self.width, self.height))
+        self.canvas.add(self.border_color)
+        self.canvas.add(self.border)
+
+    def add(self, obj):
+        self.canvas.add(obj)
+
+    def remove(self, obj):
+        self.canvas.remove(obj)
+
+    def in_bounds(self, mouse_pos):
+        return (mouse_pos[0] >= self.pos[0]) and \
+               (mouse_pos[0] <= self.pos[0] + self.width) and \
+               (mouse_pos[1] >= self.pos[1]) and \
+               (mouse_pos[1] <= self.pos[1] + self.height)
 
 @client.on('update_count')
 def update_count(data):
