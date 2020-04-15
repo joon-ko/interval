@@ -285,8 +285,9 @@ class PhysicsBubbleHandler(object):
                 self.ts.select(timbre) # have the GUI update as well
 
         if key == 'g': # toggle gravity
-            self.gravity[cid] = not self.gravity[cid]
-            self.gs.toggle()
+            if cid == self.cid:
+                self.gravity[cid] = not self.gravity[cid]
+                self.gs.toggle()
 
         # other clients should update their state to reflect this client's new selection.
         if self.cid == cid: # don't want every client updating server's state at the same time!
