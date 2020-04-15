@@ -190,12 +190,17 @@ class PhysicsBubbleHandler(object):
         self.sandbox.add(self.bubbles)
 
         # test -- adding timbre select
-        self.sandbox.add(TimbreSelect(pos=(20, 500)))
+        self.ts = TimbreSelect(pos=(20, 500), callback=self.update_timbre)
+        self.sandbox.add(self.ts)
 
     def on_touch_down(self, cid, pos):
         """
         Start drawing the drag line and preview of the PhysicsBubble.
         """
+        if cid == self.cid:
+            if self.ts.in_bounds(pos, self.ts.pos, self.ts.size):
+                self.ts.on_touch_down(pos)
+
         if not self.sandbox.in_bounds(pos):
             return
 
@@ -228,9 +233,9 @@ class PhysicsBubbleHandler(object):
         if not self.sandbox.in_bounds(pos):
             # if we were currently drawing a preview shape/line but released the mouse out of
             # bounds, we should release the shape anyway as a QOL measure
-            if not (self.hold_shape[cid] in self.sandbox) and \
-                   (self.text[cid] in self.sandbox) and \
-                   (self.hold_line[cid] in self.sandbox):
+            if (self.hold_shape.get(cid) not in self.sandbox) or \
+               (self.text.get(cid) not in self.sandbox) or \
+               (self.hold_line.get(cid) not in self.sandbox):
                 return
 
         self.sandbox.remove(self.hold_shape[cid])
@@ -271,6 +276,8 @@ class PhysicsBubbleHandler(object):
         timbre = lookup(key, 'qwer', ['sine', 'square', 'triangle', 'sawtooth'])
         if timbre is not None:
             self.timbre[cid] = timbre
+            if self.cid == cid:
+                self.ts.select(timbre) # have the GUI update as well
 
         if key == 'g': # toggle gravity
             self.gravity[cid] = not self.gravity[cid]
@@ -286,6 +293,13 @@ class PhysicsBubbleHandler(object):
         note = NoteGenerator(pitch, 1, timbre)
         env = Envelope(note, 0.01, 1, 0.2, 2)
         self.mixer.add(env)
+
+    def update_timbre(self, timbre):
+        """
+        Update this client's timbre due to TimbreSelect.
+        """
+        self.timbre[self.cid] = timbre
+        self.update_server_state(post=True)
 
     def display_controls(self):
         """
