@@ -6,6 +6,57 @@ from kivy.graphics import Color, Line, Rectangle
 from kivy.graphics.instructions import InstructionGroup
 from kivy.core.image import Image
 
+class GravitySelect(InstructionGroup):
+    """
+    Submodule to toggle gravity of PhysicsBubble.
+    """
+    def __init__(self, pos, callback):
+        super(GravitySelect, self).__init__()
+
+        # callback is needed to update PhysicsBubbleHandler's state for timbre
+        self.callback = callback
+        self.pos = pos
+        self.margin = 20
+        self.size = (25,25)
+
+        self.gravity_toggle_off = Rectangle(
+            pos=self.pos,
+            size=self.size,
+            texture=Image('ui/buttons/unchecked.png').texture
+        )
+        self.gravity_toggle_on = Rectangle(
+            pos=self.pos,
+            size=(25,25),
+            texture=Image('ui/buttons/checked.png').texture
+        )
+        self.add(self.gravity_toggle_off)
+
+    def in_bounds(self, mouse_pos, obj_pos, obj_size):
+        """
+        Check if a mouse's position is inside an object.
+        :param mouse_pos: (x, y) mouse position
+        :param obj_pos: (x, y) object position
+        :param obj_size: (width, height) object size
+        """
+        return (mouse_pos[0] >= obj_pos[0]) and \
+               (mouse_pos[0] <= obj_pos[0] + obj_size[0]) and \
+               (mouse_pos[1] >= obj_pos[1]) and \
+               (mouse_pos[1] <= obj_pos[1] + obj_size[1])
+
+    def on_touch_down(self, pos):
+        button_size = (self.gravity_toggle_off.size[0], self.gravity_toggle_off.size[1])
+
+        if self.in_bounds(pos, self.gravity_toggle_off.pos, button_size):
+            self.toggle()
+
+    def toggle(self):
+        if self.gravity_toggle_on not in self.children:
+            self.add(self.gravity_toggle_on)
+            self.callback(True)
+        else:
+            self.remove(self.gravity_toggle_on)
+            self.callback(False)
+
 class TimbreSelect(InstructionGroup):
     """
     Submodule to select the timbre of PhysicsBubble.

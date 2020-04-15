@@ -11,6 +11,7 @@ from kivy.core.image import Image
 import numpy as np
 
 from modules.bubble_gui import TimbreSelect
+from modules.bubble_gui import GravitySelect
 
 def timbre_to_shape(timbre, pos):
     if timbre == 'sine':
@@ -191,7 +192,9 @@ class PhysicsBubbleHandler(object):
 
         # test -- adding timbre select
         self.ts = TimbreSelect(pos=(20, 500), callback=self.update_timbre)
+        self.gs = GravitySelect(pos=(20, 300), callback=self.update_gravity)
         self.sandbox.add(self.ts)
+        self.sandbox.add(self.gs)
 
     def on_touch_down(self, cid, pos):
         """
@@ -200,6 +203,8 @@ class PhysicsBubbleHandler(object):
         if cid == self.cid:
             if self.ts.in_bounds(pos, self.ts.pos, self.ts.size):
                 self.ts.on_touch_down(pos)
+            if self.gs.in_bounds(pos, self.gs.pos, self.gs.size):
+                self.gs.on_touch_down(pos)
 
         if not self.sandbox.in_bounds(pos):
             return
@@ -281,6 +286,7 @@ class PhysicsBubbleHandler(object):
 
         if key == 'g': # toggle gravity
             self.gravity[cid] = not self.gravity[cid]
+            self.gs.toggle()
 
         # other clients should update their state to reflect this client's new selection.
         if self.cid == cid: # don't want every client updating server's state at the same time!
@@ -299,6 +305,13 @@ class PhysicsBubbleHandler(object):
         Update this client's timbre due to TimbreSelect.
         """
         self.timbre[self.cid] = timbre
+        self.update_server_state(post=True)
+
+    def update_gravity(self, gravity):
+        """
+        Update this client's timbre due to GravitySelect.
+        """
+        self.gravity[self.cid] = gravity
         self.update_server_state(post=True)
 
     def display_controls(self):
