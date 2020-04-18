@@ -5,6 +5,7 @@ from common.gfxutil import CLabelRect
 from kivy.graphics import Color, Line, Rectangle
 from kivy.graphics.instructions import InstructionGroup
 from kivy.core.image import Image
+from kivy.clock import Clock as kivyClock
 
 class BounceSelect(InstructionGroup):
     """
@@ -74,22 +75,33 @@ class BounceSelect(InstructionGroup):
         self.bounces+=1
         self.callback(self.bounces)
 
+    def left_press_on_anim(self):
+        if self.left_on not in self.children:
+            self.add(self.left_on)
+
+    def left_press_off_anim(self):
+        if self.left_on in self.children:
+            self.remove(self.left_on)
+
+    def right_press_on_anim(self):
+        if self.right_on not in self.children:
+            self.add(self.right_on)
+
+    def right_press_off_anim(self):
+        if self.right_on in self.children:
+            self.remove(self.right_on)
+
     def left_press_anim(self, pos):
         if self.in_bounds(pos, self.left_off.pos, self.size):
-            if self.left_on not in self.children:
-                print("THIS SHOLD BE ON")
-                self.add(self.left_on)
+            self.left_press_on_anim()
         else:
-            if self.left_on in self.children:
-                self.remove(self.left_on)
+            self.left_press_off_anim()
 
     def right_press_anim(self, pos):
         if self.in_bounds(pos, self.right_off.pos, self.size):
-            if self.right_on not in self.children:
-                self.add(self.right_on)
+            self.right_press_on_anim()
         else:
-            if self.right_on in self.children:
-                self.remove(self.right_on)
+            self.right_press_off_anim()
 
     def on_update(self, pos):
         self.left_press_anim(pos)

@@ -8,6 +8,7 @@ from kivy.graphics import Color, Line, Rectangle
 from kivy.graphics.instructions import InstructionGroup
 from kivy.core.image import Image
 from kivy.core.window import Window
+from kivy.clock import Clock as kivyClock
 
 import numpy as np
 
@@ -281,12 +282,10 @@ class PhysicsBubbleHandler(object):
         d_bounces = lookup(key, ['up', 'down'], [1, -1])
         if d_bounces is not None:
             if cid == self.cid:
-                if d_bounces == -1:
-                    self.bs.left_press()
-                    self.bs.left_press_anim(self.bs.left_center)
+                if key == 'down':
+                    kivyClock.schedule_once(lambda dt: self.bs.left_press_on_anim(), 1)
                 else:
-                    self.bs.right_press()
-                    self.bs.right_press_anim(self.bs.right_center)
+                    kivyClock.schedule_once(lambda dt: self.bs.right_press_on_anim(), 1)
             self.bounces[cid] += d_bounces
 
         timbre = lookup(key, 'qwer', ['sine', 'square', 'triangle', 'sawtooth'])
