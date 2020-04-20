@@ -1,5 +1,7 @@
 # interval
 
+![](images/interval_alpha.png)
+
 ### project members
 - joon ko (joonhok)
 - nisha devasia (ndevasia)
