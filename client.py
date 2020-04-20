@@ -19,8 +19,7 @@ from modules.bubble import PhysicsBubble, PhysicsBubbleHandler
 from modules.block import SoundBlock, SoundBlockHandler
 
 # warning: using localhost instead of public IP breaks the client if you click too fast!
-# server_url = 'http://localhost:8000'
-server_url = 'http://localhost:8000'
+server_url = 'http://173.52.37.59:8000'
 
 client = socketio.Client()
 client.connect(server_url)
@@ -42,7 +41,7 @@ class MainScreen(Screen):
         self.mixer.set_gain(1.0)
         self.audio.set_generator(self.mixer)
 
-        self.sandbox = Sandbox(canvas=self.canvas, pos=(400, 0), size=(1200, 1200))
+        self.sandbox = Sandbox(canvas=self.canvas, pos=(420, 20), size=(1160, 1160))
 
         # since putting all our sound module code in MainScreen would be a nightmare, we've
         # modularized our modules into separate files. each module has two classes, the sound
@@ -130,17 +129,17 @@ class StartScreen(Screen):
         self.logo_size = (300,300)
         self.button_size = (150,75)
         self.img = Rectangle(
-            pos=(Window.width/2 - self.logo_size[0]/2, Window.height/2 - 50), #TODO: get rid of magic number
+            pos=(Window.width/2 - self.logo_size[0]/2, Window.height/2 - 50),
             size=(300,300),
             texture=Image('images/logo.png').texture
         )
         self.create = Rectangle(
-            pos=(Window.width/2 - self.button_size[0]/2, Window.height/2 - (325/2)), #TODO: get rid of magic number
+            pos=(Window.width/2 - self.button_size[0]/2, Window.height/2 - (325/2)),
             size=(150,75),
             texture=Image('ui/buttons/start-unclicked.png').texture
         )
         self.create_click = Rectangle(
-            pos=(Window.width/2 - self.button_size[0]/2, Window.height/2 - (325/2)), #TODO: get rid of magic number
+            pos=(Window.width/2 - self.button_size[0]/2, Window.height/2 - (325/2)),
             size=(150,75),
             texture=Image('ui/buttons/start-clicked.png').texture
         )
@@ -148,10 +147,10 @@ class StartScreen(Screen):
         self.canvas.add(self.create)
 
     def on_layout(self, win_size):
-        self.img.pos = (Window.width/2 - self.logo_size[0]/2, Window.height/2 - 50) #TODO: get rid of magic number
-        self.create.pos = (Window.width/2 - self.button_size[0]/2, Window.height/2 - (325/2)) #TODO: get rid of magic number
+        self.img.pos = (Window.width/2 - self.logo_size[0]/2, Window.height/2 - 50)
+        self.create.pos = (Window.width/2 - self.button_size[0]/2, Window.height/2 - (325/2))
         if self.create_click in self.children:
-            self.create_click.pos = (Window.width/2 - self.button_size[0]/2, Window.height/2 - (325/2))#TODO: get rid of magic number
+            self.create_click.pos = (Window.width/2 - self.button_size[0]/2, Window.height/2 - (325/2))
 
     def on_update(self):
         mouse_pos = Window.mouse_pos
@@ -187,7 +186,7 @@ class Sandbox(object):
         self.pos = pos
         self.width, self.height = size
 
-        self.border_color = Color(1, 0, 0) # red
+        self.border_color = Color(0, 1, 0)
         self.border = Line(rectangle=(*self.pos, self.width, self.height))
         self.canvas.add(self.border_color)
         self.canvas.add(self.border)
