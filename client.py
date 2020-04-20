@@ -41,7 +41,7 @@ class MainScreen(Screen):
         self.mixer.set_gain(1.0)
         self.audio.set_generator(self.mixer)
 
-        self.sandbox = Sandbox(canvas=self.canvas, pos=(400, 0), size=(1200, 1200))
+        self.sandbox = Sandbox(canvas=self.canvas, pos=(420, 20), size=(1160, 1160))
 
         # since putting all our sound module code in MainScreen would be a nightmare, we've
         # modularized our modules into separate files. each module has two classes, the sound
@@ -185,7 +185,7 @@ class Sandbox(object):
         self.pos = pos
         self.width, self.height = size
 
-        self.border_color = Color(1, 0, 0) # red
+        self.border_color = Color(0, 1, 0)
         self.border = Line(rectangle=(*self.pos, self.width, self.height))
         self.canvas.add(self.border_color)
         self.canvas.add(self.border)

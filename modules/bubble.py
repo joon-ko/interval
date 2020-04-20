@@ -192,11 +192,11 @@ class PhysicsBubbleHandler(object):
         self.sandbox.add(self.bubbles)
 
         # GUI elements
-        self.ts = TimbreSelect(pos=(20, 500), callback=self.update_timbre)
-        self.gs = GravitySelect(pos=(20, 380), callback=self.update_gravity)
+        self.ts = TimbreSelect(pos=(20, 860), callback=self.update_timbre)
+        self.gs = GravitySelect(pos=(20, 750), callback=self.update_gravity)
         self.bs = BounceSelect(
             self.default_bounces,
-            pos=(20, 250),
+            pos=(20, 600),
             callback=self.update_bounces
         )
         self.sandbox.add(self.ts)
@@ -212,8 +212,7 @@ class PhysicsBubbleHandler(object):
                 self.ts.on_touch_down(pos)
             if self.gs.in_bounds(pos, self.gs.pos, self.gs.size):
                 self.gs.on_touch_down(pos)
-            if (self.bs.in_bounds(pos, self.bs.pos, self.bs.size)) or \
-               (self.bs.in_bounds(pos, self.bs.right_pos, self.bs.size)):
+            if self.bs.in_bounds(pos, self.bs.pos, self.bs.size):
                 self.bs.on_touch_down(pos)
 
         if not self.sandbox.in_bounds(pos):
@@ -288,7 +287,7 @@ class PhysicsBubbleHandler(object):
         if d_bounces is not None:
             self.bounces[cid] += d_bounces
             if cid == self.cid:
-                self.bs.bounces = self.bounces[cid]
+                self.bs.update_bounces(self.bounces[cid])
 
         timbre = lookup(key, 'qwer', ['sine', 'square', 'triangle', 'sawtooth'])
         if timbre is not None:
@@ -340,8 +339,6 @@ class PhysicsBubbleHandler(object):
         """
         if self.display:
             info = 'pitch: {}\n'.format(self.pitch[self.cid])
-            info += 'bounces: {}\n'.format(self.bounces[self.cid])
-            info += 'gravity: {}\n'.format(self.gravity[self.cid])
             return info
         else:
             return ''

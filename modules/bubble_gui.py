@@ -5,7 +5,6 @@ from common.gfxutil import CLabelRect
 from kivy.graphics import Color, Line, Rectangle
 from kivy.graphics.instructions import InstructionGroup
 from kivy.core.image import Image
-from kivy.clock import Clock as kivyClock
 
 class BounceSelect(InstructionGroup):
     """
@@ -18,36 +17,59 @@ class BounceSelect(InstructionGroup):
 
         self.callback = callback
         self.pos = pos
-        self.right_pos = (self.pos[0]+100, self.pos[1]) #TODO: get rid of magic number
         self.margin = 20
-        self.left_center = (self.margin+5, self.pos[1]+15)
-        self.right_center = (self.margin+105, self.pos[1]+15)
-        self.size = (25,25)
+        self.size = (210, 130)
 
+        self.border_color = Color(1, 0, 0)
+        self.border = Line(rectangle=(*self.pos, *self.size))
+        self.add(self.border_color)
+        self.add(self.border)
+
+        self.arrow_size = (50, 50)
+        self.left_pos = (
+            self.pos[0] + self.margin,
+            self.pos[1] + self.margin
+        )
         self.left_off = Rectangle(
-            pos=self.pos,
-            size=self.size,
+            pos=self.left_pos,
+            size=self.arrow_size,
             texture=Image('ui/buttons/left_arrow.png').texture
         )
         self.left_on = Rectangle(
-            pos=self.pos,
-            size=(25,25),
+            pos=self.left_pos,
+            size=self.arrow_size,
             texture=Image('ui/buttons/left_arrow_clicked.png').texture
+        )
+        self.right_pos = (
+            self.pos[0] + self.size[0] - self.margin - self.arrow_size[0],
+            self.pos[1] + self.margin
         )
         self.right_off = Rectangle(
             pos=self.right_pos,
-            size=self.size,
+            size=self.arrow_size,
             texture=Image('ui/buttons/right_arrow.png').texture
         )
         self.right_on = Rectangle(
             pos=self.right_pos,
-            size=(25,25),
+            size=self.arrow_size,
             texture=Image('ui/buttons/right_arrow_clicked.png').texture
         )
         # left_off and right_off are always drawn, but when user mouses over an arrow,
         # left_on and right_on are drawn over left_off and right_off
+        self.add(Color(1, 1, 1))
         self.add(self.left_off)
         self.add(self.right_off)
+
+        title_pos = (self.pos[0] + self.size[0]/2, self.pos[1] + self.size[1] - 30)
+        self.title = CLabelRect(cpos=title_pos, text='bounces', font_size='18')
+        self.add(self.title)
+
+        bounce_text_pos = (
+            self.pos[0] + self.size[0]/2,
+            self.pos[1] + self.margin + self.arrow_size[1]/2
+        )
+        self.bounce_text = CLabelRect(cpos=bounce_text_pos, text=str(self.bounces), font_size='18')
+        self.add(self.bounce_text)
 
     def in_bounds(self, mouse_pos, obj_pos, obj_size):
         """
@@ -62,21 +84,23 @@ class BounceSelect(InstructionGroup):
                (mouse_pos[1] <= obj_pos[1] + obj_size[1])
 
     def on_touch_down(self, pos):
-        if self.in_bounds(pos, self.left_off.pos, self.size):
+        if self.in_bounds(pos, self.left_off.pos, self.arrow_size):
             self.left_press()
-        elif self.in_bounds(pos, self.right_off.pos, self.size):
+        elif self.in_bounds(pos, self.right_off.pos, self.arrow_size):
             self.right_press()
 
     def left_press(self):
         self.bounces -= 1
+        self.bounce_text.set_text(str(self.bounces))
         self.callback(self.bounces)
 
     def right_press(self):
         self.bounces += 1
+        self.bounce_text.set_text(str(self.bounces))
         self.callback(self.bounces)
 
     def left_anim(self, pos):
-        if self.in_bounds(pos, self.left_off.pos, self.size):
+        if self.in_bounds(pos, self.left_off.pos, self.arrow_size):
             if self.left_on not in self.children:
                 self.add(self.left_on)
         else:
@@ -84,12 +108,16 @@ class BounceSelect(InstructionGroup):
                 self.remove(self.left_on)
 
     def right_anim(self, pos):
-        if self.in_bounds(pos, self.right_off.pos, self.size):
+        if self.in_bounds(pos, self.right_off.pos, self.arrow_size):
             if self.right_on not in self.children:
                 self.add(self.right_on)
         else:
             if self.right_on in self.children:
                 self.remove(self.right_on)
+
+    def update_bounces(self, bounces):
+        self.bounces = bounces
+        self.bounce_text.set_text(str(bounces))
 
     def on_update(self, pos):
         self.left_anim(pos)
