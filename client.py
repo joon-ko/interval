@@ -19,8 +19,7 @@ from modules.bubble import PhysicsBubble, PhysicsBubbleHandler
 from modules.block import SoundBlock, SoundBlockHandler
 
 # warning: using localhost instead of public IP breaks the client if you click too fast!
-# server_url = 'http://localhost:8000'
-server_url = 'http://localhost:8000'
+server_url = 'http://173.52.37.59:8000'
 
 client = socketio.Client()
 client.connect(server_url)

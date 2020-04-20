@@ -7,11 +7,12 @@ from common.note import NoteGenerator, Envelope
 from kivy.graphics import Color, Line, Rectangle
 from kivy.graphics.instructions import InstructionGroup
 from kivy.core.image import Image
+from kivy.core.window import Window
+from kivy.clock import Clock as kivyClock
 
 import numpy as np
 
-from modules.bubble_gui import TimbreSelect
-from modules.bubble_gui import GravitySelect
+from modules.bubble_gui import TimbreSelect, GravitySelect, BounceSelect
 
 def timbre_to_shape(timbre, pos):
     if timbre == 'sine':
@@ -193,8 +194,14 @@ class PhysicsBubbleHandler(object):
         # test -- adding timbre select
         self.ts = TimbreSelect(pos=(20, 500), callback=self.update_timbre)
         self.gs = GravitySelect(pos=(20, 300), callback=self.update_gravity)
+        self.bs = BounceSelect(
+            self.default_bounces,
+            pos=(20, 250),
+            callback=self.update_bounces
+        )
         self.sandbox.add(self.ts)
         self.sandbox.add(self.gs)
+        self.sandbox.add(self.bs)
 
     def on_touch_down(self, cid, pos):
         """
@@ -205,6 +212,8 @@ class PhysicsBubbleHandler(object):
                 self.ts.on_touch_down(pos)
             if self.gs.in_bounds(pos, self.gs.pos, self.gs.size):
                 self.gs.on_touch_down(pos)
+            if self.bs.in_bounds(pos, self.bs.pos, self.bs.size) or self.bs.in_bounds(pos, self.bs.right_pos, self.bs.size):
+                self.bs.on_touch_down(pos)
 
         if not self.sandbox.in_bounds(pos):
             return
@@ -274,9 +283,11 @@ class PhysicsBubbleHandler(object):
             self.pitch[cid] = self.pitch_list[index]
             self.color[cid] = self.color_dict[color]
 
-        d_bounces = lookup(key, ['up', 'down'], [1, -1])
+        d_bounces = lookup(key, ['right', 'left'], [1, -1])
         if d_bounces is not None:
             self.bounces[cid] += d_bounces
+            if cid == self.cid:
+                self.bs.bounces = self.bounces[cid]
 
         timbre = lookup(key, 'qwer', ['sine', 'square', 'triangle', 'sawtooth'])
         if timbre is not None:
@@ -315,6 +326,13 @@ class PhysicsBubbleHandler(object):
         self.gravity[self.cid] = gravity
         self.update_server_state(post=True)
 
+    def update_bounces(self, bounces):
+        """
+        Update this client's bounces due to BounceSelect.
+        """
+        self.bounces[self.cid] = bounces
+        self.update_server_state(post=True)
+
     def display_controls(self):
         """
         Provides additional info specific to this module to go on the top-left label.
@@ -330,6 +348,7 @@ class PhysicsBubbleHandler(object):
 
     def on_update(self):
         self.bubbles.on_update()
+        self.bs.on_update(Window.mouse_pos)
 
     def update_server_state(self, post=False):
         """

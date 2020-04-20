@@ -5,6 +5,96 @@ from common.gfxutil import CLabelRect
 from kivy.graphics import Color, Line, Rectangle
 from kivy.graphics.instructions import InstructionGroup
 from kivy.core.image import Image
+from kivy.clock import Clock as kivyClock
+
+class BounceSelect(InstructionGroup):
+    """
+    Submodule to toggle bounces of PhysicsBubble.
+    """
+    def __init__(self, default_bounces, pos, callback):
+        super(BounceSelect, self).__init__()
+
+        self.bounces = default_bounces
+
+        self.callback = callback
+        self.pos = pos
+        self.right_pos = (self.pos[0]+100, self.pos[1]) #TODO: get rid of magic number
+        self.margin = 20
+        self.left_center = (self.margin+5, self.pos[1]+15)
+        self.right_center = (self.margin+105, self.pos[1]+15)
+        self.size = (25,25)
+
+        self.left_off = Rectangle(
+            pos=self.pos,
+            size=self.size,
+            texture=Image('ui/buttons/left_arrow.png').texture
+        )
+        self.left_on = Rectangle(
+            pos=self.pos,
+            size=(25,25),
+            texture=Image('ui/buttons/left_arrow_clicked.png').texture
+        )
+        self.right_off = Rectangle(
+            pos=self.right_pos,
+            size=self.size,
+            texture=Image('ui/buttons/right_arrow.png').texture
+        )
+        self.right_on = Rectangle(
+            pos=self.right_pos,
+            size=(25,25),
+            texture=Image('ui/buttons/right_arrow_clicked.png').texture
+        )
+        # left_off and right_off are always drawn, but when user mouses over an arrow,
+        # left_on and right_on are drawn over left_off and right_off
+        self.add(self.left_off)
+        self.add(self.right_off)
+
+    def in_bounds(self, mouse_pos, obj_pos, obj_size):
+        """
+        Check if a mouse's position is inside an object.
+        :param mouse_pos: (x, y) mouse position
+        :param obj_pos: (x, y) object position
+        :param obj_size: (width, height) object size
+        """
+        return (mouse_pos[0] >= obj_pos[0]) and \
+               (mouse_pos[0] <= obj_pos[0] + obj_size[0]) and \
+               (mouse_pos[1] >= obj_pos[1]) and \
+               (mouse_pos[1] <= obj_pos[1] + obj_size[1])
+
+    def on_touch_down(self, pos):
+        if self.in_bounds(pos, self.left_off.pos, self.size):
+            self.left_press()
+        elif self.in_bounds(pos, self.right_off.pos, self.size):
+            self.right_press()
+
+    def left_press(self):
+        self.bounces -= 1
+        self.callback(self.bounces)
+
+    def right_press(self):
+        self.bounces += 1
+        self.callback(self.bounces)
+
+    def left_anim(self, pos):
+        if self.in_bounds(pos, self.left_off.pos, self.size):
+            if self.left_on not in self.children:
+                self.add(self.left_on)
+        else:
+            if self.left_on in self.children:
+                self.remove(self.left_on)
+
+    def right_anim(self, pos):
+        if self.in_bounds(pos, self.right_off.pos, self.size):
+            if self.right_on not in self.children:
+                self.add(self.right_on)
+        else:
+            if self.right_on in self.children:
+                self.remove(self.right_on)
+
+    def on_update(self, pos):
+        self.left_anim(pos)
+        self.right_anim(pos)
+
 
 class GravitySelect(InstructionGroup):
     """
@@ -13,7 +103,6 @@ class GravitySelect(InstructionGroup):
     def __init__(self, pos, callback):
         super(GravitySelect, self).__init__()
 
-        # callback is needed to update PhysicsBubbleHandler's state for timbre
         self.callback = callback
         self.pos = pos
         self.margin = 20
@@ -66,9 +155,7 @@ class TimbreSelect(InstructionGroup):
 
         self.selected = 'sine' # the actual important variable: which timbre is selected!
 
-        # callback is needed to update PhysicsBubbleHandler's state for timbre
         self.callback = callback
-
         self.pos = pos
         self.margin = 20
         self.button_length = 64
