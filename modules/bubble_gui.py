@@ -106,19 +106,35 @@ class GravitySelect(InstructionGroup):
         self.callback = callback
         self.pos = pos
         self.margin = 20
-        self.size = (25,25)
+        self.check_size = (50, 50)
+        self.size = (
+            210,
+            2*self.margin + self.check_size[1]
+        )
 
-        self.gravity_toggle_off = Rectangle(
-            pos=self.pos,
-            size=self.size,
+        self.border_color = Color(1, 0, 0)
+        self.border = Line(rectangle=(*self.pos, *self.size))
+        self.add(self.border_color)
+        self.add(self.border)
+
+        self.check_color = Color(1, 1, 1)
+        self.off = Rectangle(
+            pos=(self.pos[0] + self.margin, self.pos[1] + self.margin),
+            size=self.check_size,
             texture=Image('ui/buttons/unchecked.png').texture
         )
-        self.gravity_toggle_on = Rectangle(
-            pos=self.pos,
-            size=(25,25),
+        self.on = Rectangle(
+            pos=(self.pos[0] + self.margin, self.pos[1] + self.margin),
+            size=self.check_size,
             texture=Image('ui/buttons/checked.png').texture
         )
-        self.add(self.gravity_toggle_off)
+        self.add(self.check_color)
+        self.add(self.off)
+
+        title_pos = (self.pos[0] + 140, self.pos[1] + self.check_size[1]/2 + self.margin)
+        self.title = CLabelRect(cpos=title_pos, text='gravity', font_size='18')
+        self.add(Color(1, 1, 1))
+        self.add(self.title)
 
     def in_bounds(self, mouse_pos, obj_pos, obj_size):
         """
@@ -133,17 +149,16 @@ class GravitySelect(InstructionGroup):
                (mouse_pos[1] <= obj_pos[1] + obj_size[1])
 
     def on_touch_down(self, pos):
-        button_size = (self.gravity_toggle_off.size[0], self.gravity_toggle_off.size[1])
-
-        if self.in_bounds(pos, self.gravity_toggle_off.pos, button_size):
+        button_size = (self.off.size[0], self.off.size[1])
+        if self.in_bounds(pos, self.off.pos, button_size):
             self.toggle()
 
     def toggle(self):
-        if self.gravity_toggle_on not in self.children:
-            self.add(self.gravity_toggle_on)
+        if self.on not in self.children:
+            self.add(self.on)
             self.callback(True)
         else:
-            self.remove(self.gravity_toggle_on)
+            self.remove(self.on)
             self.callback(False)
 
 class TimbreSelect(InstructionGroup):

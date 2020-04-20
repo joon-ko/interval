@@ -128,17 +128,17 @@ class StartScreen(Screen):
         self.logo_size = (300,300)
         self.button_size = (150,75)
         self.img = Rectangle(
-            pos=(Window.width/2 - self.logo_size[0]/2, Window.height/2 - 50), #TODO: get rid of magic number
+            pos=(Window.width/2 - self.logo_size[0]/2, Window.height/2 - 50),
             size=(300,300),
             texture=Image('images/logo.png').texture
         )
         self.create = Rectangle(
-            pos=(Window.width/2 - self.button_size[0]/2, Window.height/2 - (325/2)), #TODO: get rid of magic number
+            pos=(Window.width/2 - self.button_size[0]/2, Window.height/2 - (325/2)),
             size=(150,75),
             texture=Image('ui/buttons/start-unclicked.png').texture
         )
         self.create_click = Rectangle(
-            pos=(Window.width/2 - self.button_size[0]/2, Window.height/2 - (325/2)), #TODO: get rid of magic number
+            pos=(Window.width/2 - self.button_size[0]/2, Window.height/2 - (325/2)),
             size=(150,75),
             texture=Image('ui/buttons/start-clicked.png').texture
         )
@@ -146,10 +146,10 @@ class StartScreen(Screen):
         self.canvas.add(self.create)
 
     def on_layout(self, win_size):
-        self.img.pos = (Window.width/2 - self.logo_size[0]/2, Window.height/2 - 50) #TODO: get rid of magic number
-        self.create.pos = (Window.width/2 - self.button_size[0]/2, Window.height/2 - (325/2)) #TODO: get rid of magic number
+        self.img.pos = (Window.width/2 - self.logo_size[0]/2, Window.height/2 - 50)
+        self.create.pos = (Window.width/2 - self.button_size[0]/2, Window.height/2 - (325/2))
         if self.create_click in self.children:
-            self.create_click.pos = (Window.width/2 - self.button_size[0]/2, Window.height/2 - (325/2))#TODO: get rid of magic number
+            self.create_click.pos = (Window.width/2 - self.button_size[0]/2, Window.height/2 - (325/2))
 
     def on_update(self):
         mouse_pos = Window.mouse_pos

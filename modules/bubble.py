@@ -191,9 +191,9 @@ class PhysicsBubbleHandler(object):
         self.bubbles = AnimGroup()
         self.sandbox.add(self.bubbles)
 
-        # test -- adding timbre select
+        # GUI elements
         self.ts = TimbreSelect(pos=(20, 500), callback=self.update_timbre)
-        self.gs = GravitySelect(pos=(20, 300), callback=self.update_gravity)
+        self.gs = GravitySelect(pos=(20, 380), callback=self.update_gravity)
         self.bs = BounceSelect(
             self.default_bounces,
             pos=(20, 250),
@@ -212,7 +212,8 @@ class PhysicsBubbleHandler(object):
                 self.ts.on_touch_down(pos)
             if self.gs.in_bounds(pos, self.gs.pos, self.gs.size):
                 self.gs.on_touch_down(pos)
-            if self.bs.in_bounds(pos, self.bs.pos, self.bs.size) or self.bs.in_bounds(pos, self.bs.right_pos, self.bs.size):
+            if (self.bs.in_bounds(pos, self.bs.pos, self.bs.size)) or \
+               (self.bs.in_bounds(pos, self.bs.right_pos, self.bs.size)):
                 self.bs.on_touch_down(pos)
 
         if not self.sandbox.in_bounds(pos):
@@ -339,7 +340,6 @@ class PhysicsBubbleHandler(object):
         """
         if self.display:
             info = 'pitch: {}\n'.format(self.pitch[self.cid])
-            info += 'timbre: {}\n'.format(self.timbre[self.cid])
             info += 'bounces: {}\n'.format(self.bounces[self.cid])
             info += 'gravity: {}\n'.format(self.gravity[self.cid])
             return info
