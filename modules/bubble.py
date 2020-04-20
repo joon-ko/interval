@@ -142,12 +142,13 @@ class PhysicsBubbleHandler(object):
     Handles user interaction and drawing of graphics before generating a PhysicsBubble.
     Also stores and updates all currently active PhysicsBubbles.
     """
-    def __init__(self, sandbox, mixer, client, client_id):
+    def __init__(self, sandbox, mixer, client, client_id, block_handler):
         self.module_name = 'PhysicsBubble'
         self.sandbox = sandbox
         self.mixer = mixer
         self.client = client
         self.cid = client_id
+        self.block_handler = block_handler
 
         # many variables here are dicts because a user's module handler needs to keep track of
         # not just its own variables, but other users' variables as well! so we use dictionaries
@@ -158,16 +159,16 @@ class PhysicsBubbleHandler(object):
         self.text = {}
         self.text_color = Color(0, 0, 0)
 
-        # TODO: update to use nisha's proposed pastel color palette
         self.color_dict = {
-            'red': (255/255, 61/255, 40/255),
-            'orange': (252/255, 144/255, 22/255),
-            'yellow': (255/255, 255/255, 103/255),
-            'green': (146/255, 205/255, 45/255),
-            'blue': (71/255, 142/255, 191/255),
-            'teal': (86/255, 190/255, 172/255),
-            'violet': (143/255, 136/255, 191/255),
-            'pink': (248/255, 133/255, 191/255)
+            'red': (201/255, 108/255, 130/255),
+            'orange': (214/255, 152/255, 142/255),
+            'yellow': (238/255, 234/255, 202/255),
+            'green': (170/255, 220/255, 206/255),
+            'teal': (159/255, 187/255, 208/255),
+            'blue': (44/255, 85/255, 123/255),
+            'indigo': (46/255, 40/255, 90/255),
+            'violet': (147/255, 127/255, 159/255),
+            'white': (239/255, 226/255, 222/255)
         }
         self.pitch_list = [60, 62, 64, 65, 67, 69, 71, 72]
 
@@ -190,7 +191,6 @@ class PhysicsBubbleHandler(object):
         self.bubbles = AnimGroup()
         self.sandbox.add(self.bubbles)
 
-        # test -- adding timbre select
         self.ts = TimbreSelect(pos=(20, 500), callback=self.update_timbre)
         self.gs = GravitySelect(pos=(20, 300), callback=self.update_gravity)
         self.sandbox.add(self.ts)

@@ -1,44 +1,241 @@
 import sys, os
 sys.path.insert(0, os.path.abspath('..'))
 
+from common.core import lookup
+from common.gfxutil import topleft_label, CEllipse, CRectangle, CLabelRect, AnimGroup, KFAnim
+from common.note import NoteGenerator, Envelope
+from kivy.graphics import Color, Line, Rectangle
 from kivy.graphics.instructions import InstructionGroup
+from kivy.core.image import Image
+from kivy.core.window import Window
+from kivy.clock import Clock as kivyClock
+
+import numpy as np
 
 class SoundBlock(InstructionGroup):
-	"""
-	This module is a rectangular, static block that plays a sound when either someone clicks it,
-	or another sound module (e.g. PhysicsBubble) collides with it.
-	"""
-	name = 'SoundBlock'
+    """
+    This module is a rectangular, static block that plays a sound when either someone clicks it,
+    or another sound module (e.g. PhysicsBubble) collides with it.
+    """
+    name = 'SoundBlock'
 
-	def __init__(self):
-		pass
+    def __init__(self, sandbox, pos, size, pitch, timbre, color, flash, callback=None):
+        """
+        :param sandbox: client's sandbox
+        :param pos: initial position
+        :param pitch: MIDI pitch value, where 60 is middle C
+        :param timbre: type of waveform, e.g. 'sine' or 'sawtooth'
+        :param color: 3-tuple of RGB color
+        :param callback: the sound function that is called when the bubble bounces
+        """
+        super(SoundBlock, self).__init__()
+        self.sandbox = sandbox
+        self.pos = np.array(pos, dtype=np.float)
+        self.size = np.array(size, dtype=np.float)
+        self.pitch = pitch
+        self.timbre = timbre
+        self.color = Color(*color)
+        self.flash = flash
+        self.callback = callback
+
+        self.text = CLabelRect(cpos=pos, text=str(self.pitch))
+        self.rect = CRectangle(
+            pos=(self.pos), 
+            size=self.size,
+        )
+
+        self.add(self.color)
+        self.add(self.rect)
+        self.add(self.text)
+
+        self.time = 0
+
+        self.on_update(0)
+
+    """
+    def on_update(self, dt):
+        if self.check_for_collisions() and self.callback is not None:
+            self.callback(self.pitch, self.timbre)
+            self.color.rgb = self.flash
+        else:
+            self.color.rgb = self.color
+
+        self.time += dt
+
+    def check_for_collisions(self):
+        bottom_left = self.pos
+        bottom_right = (self.pos[0]+self.size[0], self.pos[1])
+        top_left = (self.pos[0], self.pos[1]+self.size[1])
+        top_right = (self.pos[0]+self.size[0], self.pos[1]+self.size[1])
+
+    """
 
 class SoundBlockHandler(object):
-	"""
-	Handles user interaction and drawing of graphics before generating a SoundBlock.
+    """
+    Handles user interaction and drawing of graphics before generating a SoundBlock.
     Also stores and updates all currently active SoundBlocks.
-	"""
-	def __init__(self, canvas, mixer, client, client_id):
-		self.module_name = 'SoundBlock'
-		self.canvas = canvas
-		self.mixer = mixer
-		self.client = client
-		self.cid = client_id
+    """
+    def __init__(self, canvas, mixer, client, client_id):
+        self.module_name = 'SoundBlock'
+        self.sandbox = canvas
+        self.mixer = mixer
+        self.client = client
+        self.cid = client_id
 
-	def on_touch_down(self, cid, pos):
-		pass
+        # many variables here are dicts because a user's module handler needs to keep track of
+        # not just its own variables, but other users' variables as well! so we use dictionaries
+        # with client ids as the keys.
+        self.hold_point = {}
+        self.hold_shape = {}
 
-	def on_touch_move(self, cid, pos):
-		pass
+        self.color_dict = {
+            'red': (201/255, 108/255, 130/255),
+            'orange': (214/255, 152/255, 142/255),
+            'yellow': (238/255, 234/255, 202/255),
+            'green': (170/255, 220/255, 206/255),
+            'teal': (159/255, 187/255, 208/255),
+            'blue': (44/255, 85/255, 123/255),
+            'indigo': (46/255, 40/255, 90/255),
+            'violet': (147/255, 127/255, 159/255),
+            'white': (239/255, 226/255, 222/255)
+        }
+        self.pitch_list = [60, 62, 64, 65, 67, 69, 71, 72]
 
-	def on_touch_up(self, cid, pos):
-		pass
+        self.default_color = self.color_dict['violet']
+        self.default_pitch = self.pitch_list[0]
+        self.default_timbre = 'sine'
 
-	def on_key_down(self, cid, key):
-		pass
+        self.color = {}
+        self.pitch = {}
+        self.timbre = {}
 
-	def display_controls(self):
-		return 'this module\'s info coming soon!'
+        self.display = False
 
-	def on_update(self):
-		pass
+        self.blocks = AnimGroup()
+        self.sandbox.add(self.blocks)
+
+    def on_touch_down(self, cid, pos):
+        if not self.sandbox.in_bounds(pos):
+            return
+
+        self.hold_point[cid] = pos
+        self.hold_shape[cid] = CRectangle(pos = pos, size = (0,0))
+
+        self.sandbox.add(self.hold_shape[cid])
+
+    def on_touch_move(self, cid, pos):
+        if not self.sandbox.in_bounds(pos):
+            return
+
+        #determine which direction rectangle is being created in
+        bottom_left = self.hold_shape[cid].get_cpos() #gets current bottom left corner
+        size = self.calculate_size(bottom_left, pos)
+
+        #moving northeast
+        if pos[0] > bottom_left[0] and pos[1] > bottom_left[1]:
+            #don't have to change anything here
+            pass
+
+        #moving southeast
+        elif pos[0] > bottom_left[0] and pos[1] < bottom_left[1]:
+            bottom_left = (bottom_left[0], pos[1])
+
+        #moving southwest
+        elif pos[0] < bottom_left[0] and pos[1] < bottom_left[1]:
+            bottom_left = pos
+
+        #moving northwest
+        elif pos[0] < bottom_left[0] and pos[1] > bottom_left[1]:
+            bottom_left = (pos[0], bottom_left[1])
+
+        self.hold_shape[cid].set_cpos(bottom_left)
+        self.hold_shape[cid].set_csize(size)
+
+    def on_touch_up(self, cid, pos):
+        if not self.sandbox.in_bounds(pos):
+            return
+
+        bottom_left = self.hold_shape[cid].get_cpos()
+        size = self.calculate_size(bottom_left, pos)
+
+        self.sandbox.remove(self.hold_shape[cid])
+
+        hold_point = self.hold_point[cid]
+
+        pitch = self.pitch[cid]
+        timbre = self.timbre[cid]
+        color = self.color[cid]
+
+        block = SoundBlock(self.sandbox, bottom_left, size, pitch, timbre, color, False, self.sound)
+        self.blocks.add(block)
+
+    def on_key_down(self, cid, key):
+        pass
+
+    def display_controls(self):
+        return 'this module\'s info coming soon!'
+
+    def on_update(self):
+        self.blocks.on_update()
+
+    def update_server_state(self, post=False):
+        """
+        Update server state. If post is True, relay this updated state to all clients.
+        """
+        state = {
+            'color': self.color,
+            'pitch': self.pitch,
+            'timbre': self.timbre
+        }
+        data = {'module': self.module_name, 'cid': self.cid, 'state': state, 'post': post}
+        self.client.emit('update_state', data)
+
+    def update_client_state(self, cid, state):
+        """
+        Update this handler's state.
+        """
+        if cid != self.cid: # this client already updated its own state
+            self.color = state['color']
+            self.pitch = state['pitch']
+            self.timbre = state['timbre']
+
+    def sync_state(self, state):
+        """
+        Initial sync with the server's copy of module state.
+        We don't sync with hold_shape, hold_point, and hold_line because those objects are not
+        json-serializable and are short-term values anyway.
+        """
+        self.color = state['color']
+        self.pitch = state['pitch']
+        self.timbre = state['timbre']
+
+        # after initial sync, add default values for this client
+        self.color[self.cid] = self.default_color
+        self.pitch[self.cid] = self.default_pitch
+        self.timbre[self.cid] = self.default_timbre
+
+        # now that default values are set, we can display this module's info
+        self.display = True
+
+        # update server with these default values
+        # post=True here because we want all other clients' states to update with this client's
+        # default values.
+        self.update_server_state(post=True)
+
+    def sound(self, pitch, timbre):
+        """
+        Play a sound when a PhysicsBubble collides with a collidable object.
+        """
+        note = NoteGenerator(pitch, 1, timbre)
+        env = Envelope(note, 0.01, 1, 0.2, 2)
+        self.mixer.add(env)
+
+    def calculate_size(self, corner, pos):
+        x = abs(pos[0]-corner[0])
+        y = abs(pos[1]-corner[1])
+        return (x,y)
+
+    def calculate_center(self, corner, size):
+        c_x = corner[0]+(size[0]/2)
+        c_y = corner[1]+(size[1]/2)
+        return (c_x, c_y)

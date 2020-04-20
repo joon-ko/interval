@@ -53,9 +53,10 @@ class MainScreen(Screen):
             'PhysicsBubble': PhysicsBubble,
             'SoundBlock': SoundBlock
         }
+        sound = SoundBlockHandler(self.sandbox, self.mixer, client, client_id)
         self.module_handlers = {
-            'PhysicsBubble': PhysicsBubbleHandler(self.sandbox, self.mixer, client, client_id),
-            'SoundBlock': SoundBlockHandler(self.sandbox, self.mixer, client, client_id)
+            'SoundBlock': sound,
+            'PhysicsBubble': PhysicsBubbleHandler(self.sandbox, self.mixer, client, client_id, sound)
         }
 
         # name a default starting module and handler
