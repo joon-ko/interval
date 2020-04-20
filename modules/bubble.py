@@ -194,7 +194,11 @@ class PhysicsBubbleHandler(object):
         # test -- adding timbre select
         self.ts = TimbreSelect(pos=(20, 500), callback=self.update_timbre)
         self.gs = GravitySelect(pos=(20, 300), callback=self.update_gravity)
-        self.bs = BounceSelect(pos=(20, 250), callback=self.update_bounces)
+        self.bs = BounceSelect(
+            self.default_bounces,
+            pos=(20, 250),
+            callback=self.update_bounces
+        )
         self.sandbox.add(self.ts)
         self.sandbox.add(self.gs)
         self.sandbox.add(self.bs)
@@ -279,14 +283,11 @@ class PhysicsBubbleHandler(object):
             self.pitch[cid] = self.pitch_list[index]
             self.color[cid] = self.color_dict[color]
 
-        d_bounces = lookup(key, ['up', 'down'], [1, -1])
+        d_bounces = lookup(key, ['right', 'left'], [1, -1])
         if d_bounces is not None:
-            if cid == self.cid:
-                if key == 'down':
-                    kivyClock.schedule_once(lambda dt: self.bs.left_press_on_anim(), 1)
-                else:
-                    kivyClock.schedule_once(lambda dt: self.bs.right_press_on_anim(), 1)
             self.bounces[cid] += d_bounces
+            if cid == self.cid:
+                self.bs.bounces = self.bounces[cid]
 
         timbre = lookup(key, 'qwer', ['sine', 'square', 'triangle', 'sawtooth'])
         if timbre is not None:

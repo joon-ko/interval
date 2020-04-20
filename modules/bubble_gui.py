@@ -11,13 +11,11 @@ class BounceSelect(InstructionGroup):
     """
     Submodule to toggle bounces of PhysicsBubble.
     """
-    def __init__(self, pos, callback):
+    def __init__(self, default_bounces, pos, callback):
         super(BounceSelect, self).__init__()
 
-        #default bounces
-        self.bounces = 5
+        self.bounces = default_bounces
 
-        # callback is needed to update PhysicsBubbleHandler's state for bounces
         self.callback = callback
         self.pos = pos
         self.right_pos = (self.pos[0]+100, self.pos[1]) #TODO: get rid of magic number
@@ -46,6 +44,8 @@ class BounceSelect(InstructionGroup):
             size=(25,25),
             texture=Image('ui/buttons/right_arrow_clicked.png').texture
         )
+        # left_off and right_off are always drawn, but when user mouses over an arrow,
+        # left_on and right_on are drawn over left_off and right_off
         self.add(self.left_off)
         self.add(self.right_off)
 
@@ -68,44 +68,32 @@ class BounceSelect(InstructionGroup):
             self.right_press()
 
     def left_press(self):
-        self.bounces-=1
+        self.bounces -= 1
         self.callback(self.bounces)
 
     def right_press(self):
-        self.bounces+=1
+        self.bounces += 1
         self.callback(self.bounces)
 
-    def left_press_on_anim(self):
-        if self.left_on not in self.children:
-            self.add(self.left_on)
-
-    def left_press_off_anim(self):
-        if self.left_on in self.children:
-            self.remove(self.left_on)
-
-    def right_press_on_anim(self):
-        if self.right_on not in self.children:
-            self.add(self.right_on)
-
-    def right_press_off_anim(self):
-        if self.right_on in self.children:
-            self.remove(self.right_on)
-
-    def left_press_anim(self, pos):
+    def left_anim(self, pos):
         if self.in_bounds(pos, self.left_off.pos, self.size):
-            self.left_press_on_anim()
+            if self.left_on not in self.children:
+                self.add(self.left_on)
         else:
-            self.left_press_off_anim()
+            if self.left_on in self.children:
+                self.remove(self.left_on)
 
-    def right_press_anim(self, pos):
+    def right_anim(self, pos):
         if self.in_bounds(pos, self.right_off.pos, self.size):
-            self.right_press_on_anim()
+            if self.right_on not in self.children:
+                self.add(self.right_on)
         else:
-            self.right_press_off_anim()
+            if self.right_on in self.children:
+                self.remove(self.right_on)
 
     def on_update(self, pos):
-        self.left_press_anim(pos)
-        self.right_press_anim(pos)
+        self.left_anim(pos)
+        self.right_anim(pos)
 
 
 class GravitySelect(InstructionGroup):
@@ -115,7 +103,6 @@ class GravitySelect(InstructionGroup):
     def __init__(self, pos, callback):
         super(GravitySelect, self).__init__()
 
-        # callback is needed to update PhysicsBubbleHandler's state for timbre
         self.callback = callback
         self.pos = pos
         self.margin = 20
@@ -168,9 +155,7 @@ class TimbreSelect(InstructionGroup):
 
         self.selected = 'sine' # the actual important variable: which timbre is selected!
 
-        # callback is needed to update PhysicsBubbleHandler's state for timbre
         self.callback = callback
-
         self.pos = pos
         self.margin = 20
         self.button_length = 64
