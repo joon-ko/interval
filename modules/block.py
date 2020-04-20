@@ -19,7 +19,7 @@ class SoundBlock(InstructionGroup):
     """
     name = 'SoundBlock'
 
-    def __init__(self, sandbox, pos, size, pitch, timbre, color, flash, callback=None):
+    def __init__(self, sandbox, pos, size, flash, callback=None):
         """
         :param sandbox: client's sandbox
         :param pos: initial position
@@ -32,52 +32,32 @@ class SoundBlock(InstructionGroup):
         self.sandbox = sandbox
         self.pos = np.array(pos, dtype=np.float)
         self.size = np.array(size, dtype=np.float)
-        self.pitch = pitch
-        self.timbre = timbre
-        self.color = Color(*color)
         self.flash = flash
         self.callback = callback
 
-        self.text = CLabelRect(cpos=pos, text=str(self.pitch))
         self.rect = CRectangle(
             pos=(self.pos), 
             size=self.size,
         )
 
-        self.add(self.color)
+        self.add(Color(1, 1, 1))
         self.add(self.rect)
-        self.add(self.text)
 
         self.time = 0
 
         self.on_update(0)
 
-    """
     def on_update(self, dt):
-        if self.check_for_collisions() and self.callback is not None:
-            self.callback(self.pitch, self.timbre)
-            self.color.rgb = self.flash
-        else:
-            self.color.rgb = self.color
-
-        self.time += dt
-
-    def check_for_collisions(self):
-        bottom_left = self.pos
-        bottom_right = (self.pos[0]+self.size[0], self.pos[1])
-        top_left = (self.pos[0], self.pos[1]+self.size[1])
-        top_right = (self.pos[0]+self.size[0], self.pos[1]+self.size[1])
-
-    """
+        pass
 
 class SoundBlockHandler(object):
     """
     Handles user interaction and drawing of graphics before generating a SoundBlock.
     Also stores and updates all currently active SoundBlocks.
     """
-    def __init__(self, canvas, mixer, client, client_id):
+    def __init__(self, sandbox, mixer, client, client_id):
         self.module_name = 'SoundBlock'
-        self.sandbox = canvas
+        self.sandbox = sandbox
         self.mixer = mixer
         self.client = client
         self.cid = client_id
@@ -119,8 +99,9 @@ class SoundBlockHandler(object):
             return
 
         self.hold_point[cid] = pos
-        self.hold_shape[cid] = CRectangle(pos = pos, size = (0,0))
+        self.hold_shape[cid] = Rectangle(pos = pos, size = (0,0))
 
+        self.sandbox.add(Color(1, 1, 1))
         self.sandbox.add(self.hold_shape[cid])
 
     def on_touch_move(self, cid, pos):
@@ -128,45 +109,39 @@ class SoundBlockHandler(object):
             return
 
         #determine which direction rectangle is being created in
-        bottom_left = self.hold_shape[cid].get_cpos() #gets current bottom left corner
-        size = self.calculate_size(bottom_left, pos)
+        hold_point = self.hold_point[cid]
+        size = self.calculate_size(hold_point, pos)
+        bottom_left = pos
 
         #moving northeast
-        if pos[0] > bottom_left[0] and pos[1] > bottom_left[1]:
-            #don't have to change anything here
-            pass
+        if pos[0] > hold_point[0] and pos[1] > hold_point[1]:
+            bottom_left = hold_point
 
         #moving southeast
-        elif pos[0] > bottom_left[0] and pos[1] < bottom_left[1]:
-            bottom_left = (bottom_left[0], pos[1])
+        elif pos[0] > hold_point[0] and pos[1] < hold_point[1]:
+            bottom_left = (hold_point[0], pos[1])
 
         #moving southwest
-        elif pos[0] < bottom_left[0] and pos[1] < bottom_left[1]:
+        elif pos[0] < hold_point[0] and pos[1] < hold_point[1]:
             bottom_left = pos
 
         #moving northwest
-        elif pos[0] < bottom_left[0] and pos[1] > bottom_left[1]:
-            bottom_left = (pos[0], bottom_left[1])
+        elif pos[0] < hold_point[0] and pos[1] > hold_point[1]:
+            bottom_left = (pos[0], hold_point[1])
 
-        self.hold_shape[cid].set_cpos(bottom_left)
-        self.hold_shape[cid].set_csize(size)
+        self.hold_shape[cid].pos = bottom_left
+        self.hold_shape[cid].size = size
 
     def on_touch_up(self, cid, pos):
         if not self.sandbox.in_bounds(pos):
             return
 
-        bottom_left = self.hold_shape[cid].get_cpos()
-        size = self.calculate_size(bottom_left, pos)
+        bottom_left = self.hold_shape[cid].pos
+        size = self.hold_shape[cid].size
 
         self.sandbox.remove(self.hold_shape[cid])
 
-        hold_point = self.hold_point[cid]
-
-        pitch = self.pitch[cid]
-        timbre = self.timbre[cid]
-        color = self.color[cid]
-
-        block = SoundBlock(self.sandbox, bottom_left, size, pitch, timbre, color, False, self.sound)
+        block = SoundBlock(self.sandbox, bottom_left, size, False, self.sound)
         self.blocks.add(block)
 
     def on_key_down(self, cid, key):
