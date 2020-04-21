@@ -19,7 +19,7 @@ from modules.bubble import PhysicsBubble, PhysicsBubbleHandler
 from modules.block import SoundBlock, SoundBlockHandler
 
 # warning: using localhost instead of public IP breaks the client if you click too fast!
-server_url = 'http://173.52.37.59:8000'
+server_url = 'http://localhost:8000'
 
 client = socketio.Client()
 client.connect(server_url)
@@ -41,7 +41,7 @@ class MainScreen(Screen):
         self.mixer.set_gain(1.0)
         self.audio.set_generator(self.mixer)
 
-        self.sandbox = Sandbox(canvas=self.canvas, pos=(420, 20), size=(1160, 1160))
+        self.sandbox = Sandbox(canvas=self.canvas, pos=(580, 20), size=(1000, 1000))
 
         # since putting all our sound module code in MainScreen would be a nightmare, we've
         # modularized our modules into separate files. each module has two classes, the sound

@@ -12,7 +12,7 @@ from kivy.clock import Clock as kivyClock
 
 import numpy as np
 
-from modules.bubble_gui import TimbreSelect, GravitySelect, BounceSelect
+from modules.bubble_gui import TimbreSelect, GravitySelect, BounceSelect, PitchSelect
 
 def timbre_to_shape(timbre, pos):
     if timbre == 'sine':
@@ -193,6 +193,7 @@ class PhysicsBubbleHandler(object):
         self.sandbox.add(self.bubbles)
 
         # GUI elements
+        self.ps = PitchSelect(pos=(20, 350), callback=self.update_pitch)
         self.ts = TimbreSelect(pos=(20, 860), callback=self.update_timbre)
         self.gs = GravitySelect(pos=(20, 750), callback=self.update_gravity)
         self.bs = BounceSelect(
@@ -200,7 +201,7 @@ class PhysicsBubbleHandler(object):
             pos=(20, 600),
             callback=self.update_bounces
         )
-
+        self.sandbox.add(self.ps)
         self.sandbox.add(self.ts)
         self.sandbox.add(self.gs)
         self.sandbox.add(self.bs)
@@ -210,6 +211,8 @@ class PhysicsBubbleHandler(object):
         Start drawing the drag line and preview of the PhysicsBubble.
         """
         if cid == self.cid:
+            if self.ps.in_bounds(pos, self.ps.pos, self.ps.size):
+                self.ps.on_touch_down(pos)
             if self.ts.in_bounds(pos, self.ts.pos, self.ts.size):
                 self.ts.on_touch_down(pos)
             if self.gs.in_bounds(pos, self.gs.pos, self.gs.size):
@@ -279,11 +282,13 @@ class PhysicsBubbleHandler(object):
     def on_key_down(self, cid, key):
         index = lookup(key, '12345678', range(8))
         color = lookup(key, '12345678', [
-            'red', 'orange', 'yellow', 'green', 'blue', 'teal', 'violet', 'pink'
+            'red', 'orange', 'yellow', 'green', 'teal', 'blue', 'indigo', 'violet'
         ])
         if index is not None:
             self.pitch[cid] = self.pitch_list[index]
             self.color[cid] = self.color_dict[color]
+            if self.cid == cid:
+                self.ps.select(index) # have the GUI update as well
 
         d_bounces = lookup(key, ['right', 'left'], [1, -1])
         if d_bounces is not None:
@@ -314,6 +319,14 @@ class PhysicsBubbleHandler(object):
         env = Envelope(note, 0.01, 1, 0.2, 2)
         self.mixer.add(env)
 
+    def update_pitch(self, color, pitch):
+        """
+        Update this client's color and pitch due to PitchSelect.
+        """
+        self.color[self.cid] = self.color_dict[color]
+        self.pitch[self.cid] = pitch
+        self.update_server_state(post=True)
+
     def update_timbre(self, timbre):
         """
         Update this client's timbre due to TimbreSelect.
@@ -323,7 +336,7 @@ class PhysicsBubbleHandler(object):
 
     def update_gravity(self, gravity):
         """
-        Update this client's timbre due to GravitySelect.
+        Update this client's gravity due to GravitySelect.
         """
         self.gravity[self.cid] = gravity
         self.update_server_state(post=True)
