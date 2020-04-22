@@ -9,6 +9,10 @@ socketio = SocketIO(app)
 
 client_count = 0 # number of clients connected
 
+@app.route('/')
+def test_online():
+    return 'server online!'
+
 @socketio.on('connect')
 def connect():
     """
