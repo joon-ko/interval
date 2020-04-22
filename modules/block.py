@@ -131,6 +131,8 @@ class SoundBlockHandler(object):
 
         self.hold_shape[cid].pos = bottom_left
         self.hold_shape[cid].size = size
+        if size[0] <= 1 or size[1] <= 1:
+            self.hold_shape[cid].rgb = Color(1,0,0)
 
     def on_touch_up(self, cid, pos):
         if not self.sandbox.in_bounds(pos):
