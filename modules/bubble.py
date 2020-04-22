@@ -193,7 +193,7 @@ class PhysicsBubbleHandler(object):
         self.sandbox.add(self.bubbles)
 
         # GUI elements
-        self.ps = PitchSelect(pos=(20, 350), callback=self.update_pitch)
+        self.ps = PitchSelect(pos=(20, 320), callback=self.update_pitch)
         self.ts = TimbreSelect(pos=(20, 860), callback=self.update_timbre)
         self.gs = GravitySelect(pos=(20, 750), callback=self.update_gravity)
         self.bs = BounceSelect(
@@ -280,15 +280,10 @@ class PhysicsBubbleHandler(object):
         self.bubbles.add(bubble)
 
     def on_key_down(self, cid, key):
-        index = lookup(key, '12345678', range(8))
-        color = lookup(key, '12345678', [
-            'red', 'orange', 'yellow', 'green', 'teal', 'blue', 'indigo', 'violet'
-        ])
+        index = lookup(key, 'q2w3er5t6y7ui', range(13))
         if index is not None:
-            self.pitch[cid] = self.pitch_list[index]
-            self.color[cid] = self.color_dict[color]
             if self.cid == cid:
-                self.ps.select(index) # have the GUI update as well
+                self.ps.select(index)
 
         d_bounces = lookup(key, ['right', 'left'], [1, -1])
         if d_bounces is not None:
@@ -296,7 +291,7 @@ class PhysicsBubbleHandler(object):
             if cid == self.cid:
                 self.bs.update_bounces(self.bounces[cid])
 
-        timbre = lookup(key, 'qwer', ['sine', 'square', 'triangle', 'sawtooth'])
+        timbre = lookup(key, 'asdf', ['sine', 'square', 'triangle', 'sawtooth'])
         if timbre is not None:
             self.timbre[cid] = timbre
             if self.cid == cid:
@@ -350,17 +345,14 @@ class PhysicsBubbleHandler(object):
 
     def display_controls(self):
         """
-        Provides additional info specific to this module to go on the top-left label.
+        Provides additional text info specific to this module to go on the top-left label.
         """
-        if self.display:
-            info = 'pitch: {}\n'.format(self.pitch[self.cid])
-            return info
-        else:
-            return ''
+        return 'click and drag!'
 
     def on_update(self):
         self.bubbles.on_update()
         self.bs.on_update(Window.mouse_pos)
+        self.ps.on_update(Window.mouse_pos)
 
     def update_server_state(self, post=False):
         """
