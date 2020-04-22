@@ -1,4 +1,5 @@
 import random
+import os
 
 from flask import Flask
 from flask_socketio import SocketIO, emit
@@ -89,4 +90,5 @@ state_dict = {
 
 
 if __name__ == '__main__':
-    socketio.run(app, host='0.0.0.0', port='8000', debug=False)
+    port = int(os.environ.get('PORT', 8000))
+    socketio.run(app, host='0.0.0.0', port=port, debug=False)
