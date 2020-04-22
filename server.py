@@ -5,6 +5,10 @@ from flask import Flask
 from flask_socketio import SocketIO, emit
 from flask import request
 
+# attempt to fix packet 'too many packets in payload' error
+from engineio.payload import Payload
+Payload.max_decode_packets = 100
+
 app = Flask(__name__)
 socketio = SocketIO(app)
 
@@ -86,8 +90,6 @@ PhysicsBubbleState = {
 state_dict = {
     'PhysicsBubble': PhysicsBubbleState
 }
-
-
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 8000))
