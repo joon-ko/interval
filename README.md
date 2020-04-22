@@ -19,7 +19,3 @@
 
 - zx: switch sound modules
 - *PhysicsBubble*
-  - 1-8: select MIDI pitch
-  - qwer: select timbre
-  - up/down: increase/decrease number of bounces
-  - g: toggle gravity
