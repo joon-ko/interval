@@ -7,7 +7,7 @@ from flask import request
 
 # attempt to fix packet 'too many packets in payload' error
 from engineio.payload import Payload
-Payload.max_decode_packets = 100
+Payload.max_decode_packets = 500
 
 app = Flask(__name__)
 socketio = SocketIO(app)
