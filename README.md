@@ -15,7 +15,14 @@
 4. run the server with `python server.py`.
 5. in `client.py`, change `server_url` to the public IP address of the computer used to run the server, then run the client with `python client.py`.
 
-#### [temporary] module control documentation
+#### keyboard shortcuts (be a pro!)
 
-- zx: switch sound modules
+- z: PhysicsBubble
+- x: SoundBlock
 - *PhysicsBubble*
+  - qwertyui: pitch select (white keys)
+  - 23567: pitch select (black keys)
+  - [, ]: pitch select octave down, octave up
+  - asdf: timbre select (sine, square, triangle, sawtooth)
+  - g: toggle gravity
+  - left, right: # of bounces down, up

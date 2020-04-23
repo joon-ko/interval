@@ -293,6 +293,12 @@ class PhysicsBubbleHandler(object):
         if index is not None:
             if self.cid == cid:
                 self.ps.select(index)
+        if key == '[':
+            if cid == self.cid:
+                self.ps.left_press()
+        if key == ']':
+            if cid == self.cid:
+                self.ps.right_press()
 
         d_bounces = lookup(key, ['right', 'left'], [1, -1])
         if d_bounces is not None:
