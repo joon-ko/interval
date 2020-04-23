@@ -142,6 +142,7 @@ class PhysicsBubble(InstructionGroup):
 class PhysicsBubbleHandler(object):
     """
     Handles user interaction and drawing of graphics before generating a PhysicsBubble.
+    Handles the PhysicsBubble GUI.
     Also stores and updates all currently active PhysicsBubbles.
     """
     def __init__(self, sandbox, mixer, client, client_id, block_handler):

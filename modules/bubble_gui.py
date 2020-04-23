@@ -186,7 +186,7 @@ class PitchSelect(InstructionGroup):
         self.add(self.right_off)
 
         title_pos = (
-            self.size[0]/2,
+            self.pos[0] + self.size[0]/2,
             self.pos[1] + self.size[1] - self.margin - 20
         )
         self.title = CLabelRect(

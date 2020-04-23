@@ -139,7 +139,7 @@ def tick_str(tick) :
     :param tick: The tick number, an integer.
     """
     beat = float(tick) / kTicksPerQuarter
-    return "tick:{}\nbeat:{:.2f}".format(tick, beat)
+    return "tick: {}\nbeat: {:.2f}".format(tick, beat)
 
 
 # data passed into tempo map is a list of points
