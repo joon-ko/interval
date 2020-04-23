@@ -29,8 +29,8 @@ class SoundBlock(InstructionGroup):
         self.flash = flash
         self.callback = callback
 
-        self.rect = CRectangle(
-            pos=(self.pos), 
+        self.rect = Rectangle(
+            pos=self.pos,
             size=self.size,
         )
         self.color = Color(239/255, 226/255, 222/255)
