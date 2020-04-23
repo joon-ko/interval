@@ -1,6 +1,6 @@
 # interval
 
-![](images/interval_alpha.png)
+![](images/alpha_1.png)
 
 ### project members
 - joon ko (joonhok)
