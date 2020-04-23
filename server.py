@@ -20,9 +20,7 @@ def test_online():
 
 @socketio.on('connect')
 def connect():
-    """
-    This function is run every time a new client connects to the server.
-    """
+    """This function is run every time a new client connects to the server."""
     global client_count
     client_count += 1
 

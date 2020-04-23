@@ -160,6 +160,14 @@ class PhysicsBubbleHandler(object):
         self.text = {}
         self.text_color = Color(0, 0, 0)
 
+        # this mysterious variable is needed for a race condition in which touch_up events are
+        # sometimes registered before touch_down events when the user clicks too fast, causing
+        # touch_down and touch_up to occur at roughly the same time. if touch_up happens first,
+        # it returns early. when touch_down is called later, it **skips** (hence the name)
+        # adding shapes to the sandbox, after which this is toggled to False again. basically,
+        # nothing is drawn to the screen, which indirectly prompts the user to try again.
+        self.skip = {}
+
         self.color_dict = {
             'red': (201/255, 108/255, 130/255),
             'orange': (214/255, 152/255, 142/255),
@@ -177,7 +185,6 @@ class PhysicsBubbleHandler(object):
         self.default_pitch = self.pitch_list[0]
         self.default_timbre = 'sine'
         self.default_bounces = 5
-        self.default_gravity = False
 
         self.color = {}
         self.pitch = {}
@@ -207,9 +214,7 @@ class PhysicsBubbleHandler(object):
         self.sandbox.add(self.bs)
 
     def on_touch_down(self, cid, pos):
-        """
-        Start drawing the drag line and preview of the PhysicsBubble.
-        """
+        """Start drawing the drag line and preview of the PhysicsBubble."""
         if cid == self.cid:
             if self.ps.in_bounds(pos, self.ps.pos, self.ps.size):
                 self.ps.on_touch_down(pos)
@@ -228,6 +233,10 @@ class PhysicsBubbleHandler(object):
         self.hold_line[cid] = Line(points=(*pos, *pos), width=3)
         self.text[cid] = CLabelRect(cpos=pos, text=str(self.bounces[cid]))
 
+        if self.skip[cid]:
+            self.skip[cid] = False
+            return
+
         self.sandbox.add(Color(*self.color[cid]))
         self.sandbox.add(self.hold_shape[cid])
         self.sandbox.add(self.hold_line[cid])
@@ -235,9 +244,8 @@ class PhysicsBubbleHandler(object):
         self.sandbox.add(self.text[cid])
 
     def on_touch_move(self, cid, pos):
-        """
-        Update the position of the drag line and preview of the PhysicsBubble.
-        """
+        """Update the position of the drag line and preview of the PhysicsBubble."""
+
         if not self.sandbox.in_bounds(pos):
             return
 
@@ -246,15 +254,16 @@ class PhysicsBubbleHandler(object):
         self.hold_line[cid].points = (*self.hold_point[cid], *pos)
 
     def on_touch_up(self, cid, pos):
-        """
-        Release the PhysicsBubble.
-        """
-        if not self.sandbox.in_bounds(pos):
+        """Release the PhysicsBubble."""
+        if (self.hold_shape.get(cid) not in self.sandbox) or \
+           (self.text.get(cid) not in self.sandbox) or \
+           (self.hold_line.get(cid) not in self.sandbox):
             # if we were currently drawing a preview shape/line but released the mouse out of
             # bounds, we should release the shape anyway as a QOL measure
-            if (self.hold_shape.get(cid) not in self.sandbox) or \
-               (self.text.get(cid) not in self.sandbox) or \
-               (self.hold_line.get(cid) not in self.sandbox):
+            if not self.sandbox.in_bounds(pos):
+                return
+            else:
+                self.skip[cid] = True
                 return
 
         self.sandbox.remove(self.hold_shape[cid])
@@ -315,38 +324,33 @@ class PhysicsBubbleHandler(object):
         self.mixer.add(env)
 
     def update_pitch(self, color, pitch):
-        """
-        Update this client's color and pitch due to PitchSelect.
-        """
+        """Update this client's color and pitch due to PitchSelect."""
+
         self.color[self.cid] = self.color_dict[color]
         self.pitch[self.cid] = pitch
         self.update_server_state(post=True)
 
     def update_timbre(self, timbre):
-        """
-        Update this client's timbre due to TimbreSelect.
-        """
+        """Update this client's timbre due to TimbreSelect."""
+
         self.timbre[self.cid] = timbre
         self.update_server_state(post=True)
 
     def update_gravity(self, gravity):
-        """
-        Update this client's gravity due to GravitySelect.
-        """
+        """Update this client's gravity due to GravitySelect."""
+
         self.gravity[self.cid] = gravity
         self.update_server_state(post=True)
 
     def update_bounces(self, bounces):
-        """
-        Update this client's bounces due to BounceSelect.
-        """
+        """Update this client's bounces due to BounceSelect."""
+
         self.bounces[self.cid] = bounces
         self.update_server_state(post=True)
 
     def display_controls(self):
-        """
-        Provides additional text info specific to this module to go on the top-left label.
-        """
+        """Provides additional text info specific to this module to go on the top-left label."""
+
         return 'click and drag!'
 
     def on_update(self):
@@ -355,9 +359,8 @@ class PhysicsBubbleHandler(object):
         self.ps.on_update(Window.mouse_pos)
 
     def update_server_state(self, post=False):
-        """
-        Update server state. If post is True, relay this updated state to all clients.
-        """
+        """Update server state. If post is True, relay this updated state to all clients."""
+
         state = {
             'color': self.color,
             'pitch': self.pitch,
@@ -369,9 +372,8 @@ class PhysicsBubbleHandler(object):
         self.client.emit('update_state', data)
 
     def update_client_state(self, cid, state):
-        """
-        Update this handler's state.
-        """
+        """Update this handler's state."""
+
         if cid != self.cid: # this client already updated its own state
             self.color = state['color']
             self.pitch = state['pitch']
@@ -396,7 +398,8 @@ class PhysicsBubbleHandler(object):
         self.pitch[self.cid] = self.default_pitch
         self.timbre[self.cid] = self.default_timbre
         self.bounces[self.cid] = self.default_bounces
-        self.gravity[self.cid] = self.default_gravity
+        self.gravity[self.cid] = False
+        self.skip[self.cid] = False
 
         # now that default values are set, we can display this module's info
         self.display = True

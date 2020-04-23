@@ -18,7 +18,8 @@ from kivy.uix.button import Button
 from modules.bubble import PhysicsBubble, PhysicsBubbleHandler
 from modules.block import SoundBlock, SoundBlockHandler
 
-server_url = 'http://interval-app.herokuapp.com/'
+server_url = 'http://localhost:8000'
+# server_url = 'http://interval-app.herokuapp.com/'
 
 client = socketio.Client()
 client.connect(server_url)
