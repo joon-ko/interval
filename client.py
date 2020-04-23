@@ -17,6 +17,7 @@ from kivy.uix.button import Button
 
 from modules.bubble import PhysicsBubble, PhysicsBubbleHandler
 from modules.block import SoundBlock, SoundBlockHandler
+from modules.cursor import TempoCursor, TempoCursorHandler
 
 server_url = 'http://interval-app.herokuapp.com/'
 
@@ -49,12 +50,14 @@ class MainScreen(Screen):
         # of all variables related to that sound module for every connected client.
         self.module_dict = {
             'PhysicsBubble': PhysicsBubble,
-            'SoundBlock': SoundBlock
+            'SoundBlock': SoundBlock,
+            'TempoCursor': TempoCursor
         }
         sound = SoundBlockHandler(self.sandbox, self.mixer, client, client_id)
         self.module_handlers = {
             'SoundBlock': sound,
-            'PhysicsBubble': PhysicsBubbleHandler(self.sandbox, self.mixer, client, client_id, sound)
+            'PhysicsBubble': PhysicsBubbleHandler(self.sandbox, self.mixer, client, client_id, sound),
+            'TempoCursor': TempoCursorHandler(self.sandbox, self.mixer, client, client_id)
         }
 
         # name a default starting module and handler
@@ -63,7 +66,9 @@ class MainScreen(Screen):
         self.sandbox.add(self.module_handler.gui)
 
         # sync with existing server state
-        client.emit('sync_module_state', {'module': self.module.name})
+        client.emit('sync_module_state', {'module': 'PhysicsBubble'})
+        # client.emit('sync_module_state', {'module': 'SoundBlock'})
+        # client.emit('sync_module_state', {'module': 'TempoCursor'})
 
     def on_touch_down(self, touch):
         if touch.button != 'left':
@@ -94,9 +99,10 @@ class MainScreen(Screen):
         key = keycode[1]
 
         # switch module using keys (for now)
-        module_name = lookup(key, 'zx', [
+        module_name = lookup(key, 'zxc', [
             'PhysicsBubble',
-            'SoundBlock'
+            'SoundBlock',
+            'TempoCursor'
         ])
         if module_name is not None:
             old_handler = self.module_handler

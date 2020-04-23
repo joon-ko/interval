@@ -4,9 +4,9 @@ sys.path.insert(0, os.path.abspath('..'))
 from kivy.graphics import Color, Line
 from kivy.graphics.instructions import InstructionGroup
 
-class BlockGUI(InstructionGroup):
+class CursorGUI(InstructionGroup):
     def __init__(self, pos):
-        super(BlockGUI, self).__init__()
+        super(CursorGUI, self).__init__()
 
         self.pos = pos
         self.size = (50, 50)
