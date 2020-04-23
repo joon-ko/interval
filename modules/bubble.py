@@ -350,6 +350,38 @@ class PhysicsBubbleHandler(object):
     def on_update(self):
         self.bubbles.on_update()
         self.gui.on_update(Window.mouse_pos)
+        self.check_for_block_collisions()
+
+    def check_for_block_collisions(self):
+        blocks = self.block_handler.blocks.objects
+        for bubble in self.bubbles.objects:
+            for block in blocks:
+
+                if bubble.pos[0]+bubble.r >= block.pos[0] and \
+                bubble.pos[1] >= block.pos[1] and bubble.pos[1] <= block.pos[1]+block.size[1]: #going left
+                    block.color.rgb = bubble.color.rgb
+                    bubble.vel[0] *= -1
+                    print("collision left")
+                elif bubble.pos[0]-bubble.r <= block.pos[0]+block.size[0] and \
+                    bubble.pos[1] >= block.pos[1] and bubble.pos[1] <= block.pos[1]+block.size[1]: #going right
+                    block.color.rgb = bubble.color.rgb
+                    bubble.vel[0]*=-1
+                    print("collision right")
+                elif bubble.pos[1]+bubble.r >= block.pos[1] and \
+                    bubble.pos[0] >= block.pos[0] and bubble.pos[0] <= block.pos[0]+block.size[0]: #going up
+                    block.color.rgb = bubble.color.rgb
+                    bubble.vel[1] *= -1
+                    bubble.pos[1] = block.pos[1] - bubble.r
+                    print("collision up")
+                elif bubble.pos[1]-bubble.r <= block.pos[1]+block.size[1] and \
+                    bubble.pos[0] >= block.pos[0] and bubble.pos[0] <= block.pos[0]+block.size[0]: #going down
+                    block.color.rgb = bubble.color.rgb
+                    bubble.vel[1] *= -1
+                    bubble.pos[1] = block.pos[1] +block.size[1]+ bubble.r
+                    print("collision bottom")
+                else:
+                    block.color.rgb = (239/255, 226/255, 222/255)
+                    print("no collision")
 
     def update_server_state(self, post=False):
         """Update server state. If post is True, relay this updated state to all clients."""
