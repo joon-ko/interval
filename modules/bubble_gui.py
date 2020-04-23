@@ -32,6 +32,63 @@ def midi_pitch_to_note_name(pitch):
         octave += 1
     return '{}{}'.format(residue_to_note_name[residue], octave)
 
+def in_bounds(mouse_pos, obj_pos, obj_size):
+    """
+    Check if a mouse's position is inside an object.
+    :param mouse_pos: (x, y) mouse position
+    :param obj_pos: (x, y) object position
+    :param obj_size: (width, height) object size
+    """
+    return (mouse_pos[0] >= obj_pos[0]) and \
+           (mouse_pos[0] <= obj_pos[0] + obj_size[0]) and \
+           (mouse_pos[1] >= obj_pos[1]) and \
+           (mouse_pos[1] <= obj_pos[1] + obj_size[1])
+
+class BubbleGUI(InstructionGroup):
+    """
+    Main interface that controls the GUI for PhysicsBubble.
+    """
+    def __init__(
+        self, pos,
+        pitch_callback=None,
+        bounce_callback=None,
+        gravity_callback=None,
+        timbre_callback=None
+    ):
+        super(BubbleGUI, self).__init__()
+
+        self.pos = pos
+        self.size = (495, 730)
+
+        self.border_color = Color(1, 0, 0)
+        self.border = Line(rectangle=(*self.pos, *self.size))
+        self.add(self.border_color)
+        self.add(self.border)
+
+        ps_pos = (self.pos[0] + 20, self.pos[1] + 20)
+        bs_pos = (self.pos[0] + 20, self.pos[1] + 300)
+        gs_pos = (self.pos[0] + 20, self.pos[1] + 450)
+        ts_pos = (self.pos[0] + 20, self.pos[1] + 560)
+
+        self.ps = PitchSelect(pos=ps_pos, callback=pitch_callback)
+        self.bs = BounceSelect(pos=bs_pos, callback=bounce_callback)
+        self.gs = GravitySelect(pos=gs_pos, callback=gravity_callback)
+        self.ts = TimbreSelect(pos=ts_pos, callback=timbre_callback)
+
+        self.add(self.ps)
+        self.add(self.bs)
+        self.add(self.gs)
+        self.add(self.ts)
+
+    def on_touch_down(self, pos):
+        for submodule in [self.ps, self.ts, self.gs, self.bs]:
+            if in_bounds(pos, submodule.pos, submodule.size):
+                submodule.on_touch_down(pos)
+
+    def on_update(self, pos):
+        self.ps.on_update(pos)
+        self.bs.on_update(pos)
+
 class PitchSelect(InstructionGroup):
     """
     Submodule to select the pitch of PhysicsBubble in the form of a graphical piano.
@@ -139,30 +196,18 @@ class PitchSelect(InstructionGroup):
         self.add(Color(1, 1, 1))
         self.add(self.title)
 
-    def in_bounds(self, mouse_pos, obj_pos, obj_size):
-        """
-        Check if a mouse's position is inside an object.
-        :param mouse_pos: (x, y) mouse position
-        :param obj_pos: (x, y) object position
-        :param obj_size: (width, height) object size
-        """
-        return (mouse_pos[0] >= obj_pos[0]) and \
-               (mouse_pos[0] <= obj_pos[0] + obj_size[0]) and \
-               (mouse_pos[1] >= obj_pos[1]) and \
-               (mouse_pos[1] <= obj_pos[1] + obj_size[1])
-
     def on_touch_down(self, pos):
         for i in self.black_keys:
-            if self.in_bounds(pos, self.keys[i].pos, self.black_key_size):
+            if in_bounds(pos, self.keys[i].pos, self.black_key_size):
                 self.select(i)
                 return # don't also check for white keys
         for i in self.white_keys:
-            if self.in_bounds(pos, self.keys[i].pos, self.white_key_size):
+            if in_bounds(pos, self.keys[i].pos, self.white_key_size):
                 self.select(i)
 
-        if self.in_bounds(pos, self.left_off.pos, self.arrow_size):
+        if in_bounds(pos, self.left_off.pos, self.arrow_size):
             self.left_press()
-        if self.in_bounds(pos, self.right_off.pos, self.arrow_size):
+        if in_bounds(pos, self.right_off.pos, self.arrow_size):
             self.right_press()
 
     def left_press(self):
@@ -186,7 +231,7 @@ class PitchSelect(InstructionGroup):
         self.callback(self.color_names[index], self.pitch)
 
     def left_anim(self, pos):
-        if self.in_bounds(pos, self.left_off.pos, self.arrow_size):
+        if in_bounds(pos, self.left_off.pos, self.arrow_size):
             if self.left_on not in self.children:
                 self.add(self.left_on)
         else:
@@ -194,7 +239,7 @@ class PitchSelect(InstructionGroup):
                 self.remove(self.left_on)
 
     def right_anim(self, pos):
-        if self.in_bounds(pos, self.right_off.pos, self.arrow_size):
+        if in_bounds(pos, self.right_off.pos, self.arrow_size):
             if self.right_on not in self.children:
                 self.add(self.right_on)
         else:
@@ -222,10 +267,10 @@ class BounceSelect(InstructionGroup):
     """
     Submodule to toggle bounces of PhysicsBubble.
     """
-    def __init__(self, default_bounces, pos, callback):
+    def __init__(self, pos, callback):
         super(BounceSelect, self).__init__()
 
-        self.bounces = default_bounces
+        self.bounces = 5
 
         self.callback = callback
         self.pos = pos
@@ -283,22 +328,10 @@ class BounceSelect(InstructionGroup):
         self.bounce_text = CLabelRect(cpos=bounce_text_pos, text=str(self.bounces), font_size='18')
         self.add(self.bounce_text)
 
-    def in_bounds(self, mouse_pos, obj_pos, obj_size):
-        """
-        Check if a mouse's position is inside an object.
-        :param mouse_pos: (x, y) mouse position
-        :param obj_pos: (x, y) object position
-        :param obj_size: (width, height) object size
-        """
-        return (mouse_pos[0] >= obj_pos[0]) and \
-               (mouse_pos[0] <= obj_pos[0] + obj_size[0]) and \
-               (mouse_pos[1] >= obj_pos[1]) and \
-               (mouse_pos[1] <= obj_pos[1] + obj_size[1])
-
     def on_touch_down(self, pos):
-        if self.in_bounds(pos, self.left_off.pos, self.arrow_size):
+        if in_bounds(pos, self.left_off.pos, self.arrow_size):
             self.left_press()
-        elif self.in_bounds(pos, self.right_off.pos, self.arrow_size):
+        elif in_bounds(pos, self.right_off.pos, self.arrow_size):
             self.right_press()
 
     def left_press(self):
@@ -312,7 +345,7 @@ class BounceSelect(InstructionGroup):
         self.callback(self.bounces)
 
     def left_anim(self, pos):
-        if self.in_bounds(pos, self.left_off.pos, self.arrow_size):
+        if in_bounds(pos, self.left_off.pos, self.arrow_size):
             if self.left_on not in self.children:
                 self.add(self.left_on)
         else:
@@ -320,7 +353,7 @@ class BounceSelect(InstructionGroup):
                 self.remove(self.left_on)
 
     def right_anim(self, pos):
-        if self.in_bounds(pos, self.right_off.pos, self.arrow_size):
+        if in_bounds(pos, self.right_off.pos, self.arrow_size):
             if self.right_on not in self.children:
                 self.add(self.right_on)
         else:
@@ -376,21 +409,9 @@ class GravitySelect(InstructionGroup):
         self.add(Color(1, 1, 1))
         self.add(self.title)
 
-    def in_bounds(self, mouse_pos, obj_pos, obj_size):
-        """
-        Check if a mouse's position is inside an object.
-        :param mouse_pos: (x, y) mouse position
-        :param obj_pos: (x, y) object position
-        :param obj_size: (width, height) object size
-        """
-        return (mouse_pos[0] >= obj_pos[0]) and \
-               (mouse_pos[0] <= obj_pos[0] + obj_size[0]) and \
-               (mouse_pos[1] >= obj_pos[1]) and \
-               (mouse_pos[1] <= obj_pos[1] + obj_size[1])
-
     def on_touch_down(self, pos):
         button_size = (self.off.size[0], self.off.size[1])
-        if self.in_bounds(pos, self.off.pos, button_size):
+        if in_bounds(pos, self.off.pos, button_size):
             self.toggle()
 
     def toggle(self):
@@ -469,34 +490,22 @@ class TimbreSelect(InstructionGroup):
         self.add(Color(*self.white))
         self.add(self.title)
 
-    def in_bounds(self, mouse_pos, obj_pos, obj_size):
-        """
-        Check if a mouse's position is inside an object.
-        :param mouse_pos: (x, y) mouse position
-        :param obj_pos: (x, y) object position
-        :param obj_size: (width, height) object size
-        """
-        return (mouse_pos[0] >= obj_pos[0]) and \
-               (mouse_pos[0] <= obj_pos[0] + obj_size[0]) and \
-               (mouse_pos[1] >= obj_pos[1]) and \
-               (mouse_pos[1] <= obj_pos[1] + obj_size[1])
-
     def on_touch_down(self, pos):
         button_size = (self.button_length, self.button_length)
 
-        if self.in_bounds(pos, self.timbres['sine'].pos, button_size):
+        if in_bounds(pos, self.timbres['sine'].pos, button_size):
             self.select('sine')
             self.callback(self.selected)
 
-        if self.in_bounds(pos, self.timbres['square'].pos, button_size):
+        if in_bounds(pos, self.timbres['square'].pos, button_size):
             self.select('square')
             self.callback(self.selected)
 
-        if self.in_bounds(pos, self.timbres['triangle'].pos, button_size):
+        if in_bounds(pos, self.timbres['triangle'].pos, button_size):
             self.select('triangle')
             self.callback(self.selected)
 
-        if self.in_bounds(pos, self.timbres['sawtooth'].pos, button_size):
+        if in_bounds(pos, self.timbres['sawtooth'].pos, button_size):
             self.select('sawtooth')
             self.callback(self.selected)
 

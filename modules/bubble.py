@@ -13,6 +13,7 @@ from kivy.clock import Clock as kivyClock
 import numpy as np
 
 from modules.bubble_gui import TimbreSelect, GravitySelect, BounceSelect, PitchSelect
+from modules.bubble_gui import BubbleGUI
 
 def timbre_to_shape(timbre, pos):
     if timbre == 'sine':
@@ -200,40 +201,29 @@ class PhysicsBubbleHandler(object):
         self.sandbox.add(self.bubbles)
 
         # GUI elements
-        self.ps = PitchSelect(pos=(20, 320), callback=self.update_pitch)
-        self.ts = TimbreSelect(pos=(20, 860), callback=self.update_timbre)
-        self.gs = GravitySelect(pos=(20, 750), callback=self.update_gravity)
-        self.bs = BounceSelect(
-            self.default_bounces,
-            pos=(20, 600),
-            callback=self.update_bounces
+        self.gui = BubbleGUI(
+            pos=(0, 300),
+            pitch_callback=self.update_pitch,
+            bounce_callback=self.update_bounces,
+            gravity_callback=self.update_gravity,
+            timbre_callback=self.update_timbre
         )
-        self.sandbox.add(self.ps)
-        self.sandbox.add(self.ts)
-        self.sandbox.add(self.gs)
-        self.sandbox.add(self.bs)
+        self.sandbox.add(self.gui)
 
     def on_touch_down(self, cid, pos):
-        """Start drawing the drag line and preview of the PhysicsBubble."""
         if cid == self.cid:
-            if self.ps.in_bounds(pos, self.ps.pos, self.ps.size):
-                self.ps.on_touch_down(pos)
-            if self.ts.in_bounds(pos, self.ts.pos, self.ts.size):
-                self.ts.on_touch_down(pos)
-            if self.gs.in_bounds(pos, self.gs.pos, self.gs.size):
-                self.gs.on_touch_down(pos)
-            if self.bs.in_bounds(pos, self.bs.pos, self.bs.size):
-                self.bs.on_touch_down(pos)
+            self.gui.on_touch_down(pos)
 
         if not self.sandbox.in_bounds(pos):
             return
 
+        # start drawing drag line and preview of the PhysicsBubble
         self.hold_point[cid] = pos
         self.hold_shape[cid] = timbre_to_shape(self.timbre[cid], pos)
         self.hold_line[cid] = Line(points=(*pos, *pos), width=3)
         self.text[cid] = CLabelRect(cpos=pos, text=str(self.bounces[cid]))
 
-        if self.skip[cid]:
+        if self.skip.get(cid) == True:
             self.skip[cid] = False
             return
 
@@ -244,17 +234,15 @@ class PhysicsBubbleHandler(object):
         self.sandbox.add(self.text[cid])
 
     def on_touch_move(self, cid, pos):
-        """Update the position of the drag line and preview of the PhysicsBubble."""
-
         if not self.sandbox.in_bounds(pos):
             return
 
+        # update the position of the drag line and preview of the PhysicsBubble
         self.hold_shape[cid].set_cpos(pos)
         self.text[cid].set_cpos(pos)
         self.hold_line[cid].points = (*self.hold_point[cid], *pos)
 
     def on_touch_up(self, cid, pos):
-        """Release the PhysicsBubble."""
         if (self.hold_shape.get(cid) not in self.sandbox) or \
            (self.text.get(cid) not in self.sandbox) or \
            (self.hold_line.get(cid) not in self.sandbox):
@@ -282,6 +270,7 @@ class PhysicsBubbleHandler(object):
         bounces = self.bounces[cid]
         gravity = self.gravity[cid]
 
+        # release the PhysicsBubble
         bubble = PhysicsBubble(
             self.sandbox, pos, vel, pitch, timbre, color, bounces,
             gravity=gravity, callback=self.sound
@@ -292,30 +281,30 @@ class PhysicsBubbleHandler(object):
         index = lookup(key, 'q2w3er5t6y7ui', range(13))
         if index is not None:
             if self.cid == cid:
-                self.ps.select(index)
+                self.gui.ps.select(index)
         if key == '[':
             if cid == self.cid:
-                self.ps.left_press()
+                self.gui.ps.left_press()
         if key == ']':
             if cid == self.cid:
-                self.ps.right_press()
+                self.gui.ps.right_press()
 
         d_bounces = lookup(key, ['right', 'left'], [1, -1])
         if d_bounces is not None:
             self.bounces[cid] += d_bounces
             if cid == self.cid:
-                self.bs.update_bounces(self.bounces[cid])
+                self.gui.bs.update_bounces(self.bounces[cid])
 
         timbre = lookup(key, 'asdf', ['sine', 'square', 'triangle', 'sawtooth'])
         if timbre is not None:
             self.timbre[cid] = timbre
             if self.cid == cid:
-                self.ts.select(timbre) # have the GUI update as well
+                self.gui.ts.select(timbre) # have the GUI update as well
 
         if key == 'g': # toggle gravity
             if cid == self.cid:
                 self.gravity[cid] = not self.gravity[cid]
-                self.gs.toggle()
+                self.gui.gs.toggle()
 
         # other clients should update their state to reflect this client's new selection.
         if self.cid == cid: # don't want every client updating server's state at the same time!
@@ -361,8 +350,7 @@ class PhysicsBubbleHandler(object):
 
     def on_update(self):
         self.bubbles.on_update()
-        self.bs.on_update(Window.mouse_pos)
-        self.ps.on_update(Window.mouse_pos)
+        self.gui.on_update(Window.mouse_pos)
 
     def update_server_state(self, post=False):
         """Update server state. If post is True, relay this updated state to all clients."""
