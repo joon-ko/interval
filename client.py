@@ -18,8 +18,7 @@ from kivy.uix.button import Button
 from modules.bubble import PhysicsBubble, PhysicsBubbleHandler
 from modules.block import SoundBlock, SoundBlockHandler
 
-server_url = 'http://localhost:8000'
-# server_url = 'http://interval-app.herokuapp.com/'
+server_url = 'http://interval-app.herokuapp.com/'
 
 client = socketio.Client()
 client.connect(server_url)
@@ -61,6 +60,7 @@ class MainScreen(Screen):
         # name a default starting module and handler
         self.module = PhysicsBubble
         self.module_handler = self.module_handlers[self.module.name]
+        self.sandbox.add(self.module_handler.gui)
 
         # sync with existing server state
         client.emit('sync_module_state', {'module': self.module.name})
@@ -99,8 +99,13 @@ class MainScreen(Screen):
             'SoundBlock'
         ])
         if module_name is not None:
-            self.module = self.module_dict[module_name]
-            self.module_handler = self.module_handlers[module_name]
+            old_handler = self.module_handler
+            new_handler = self.module_handlers[module_name]
+            if old_handler.module_name != new_handler.module_name:
+                self.sandbox.remove(old_handler.gui)
+                self.sandbox.add(new_handler.gui)
+                self.module = self.module_dict[module_name]
+                self.module_handler = new_handler
         else:
             data = {'cid': client_id, 'module': self.module.name, 'key': key}
             client.emit('key_down', data)

@@ -12,6 +12,8 @@ from kivy.clock import Clock as kivyClock
 
 import numpy as np
 
+from modules.block_gui import BlockGUI
+
 class SoundBlock(InstructionGroup):
     """
     This module is a rectangular, static block that plays a sound when either someone clicks it,
@@ -20,14 +22,6 @@ class SoundBlock(InstructionGroup):
     name = 'SoundBlock'
 
     def __init__(self, sandbox, pos, size, flash, callback=None):
-        """
-        :param sandbox: client's sandbox
-        :param pos: initial position
-        :param pitch: MIDI pitch value, where 60 is middle C
-        :param timbre: type of waveform, e.g. 'sine' or 'sawtooth'
-        :param color: 3-tuple of RGB color
-        :param callback: the sound function that is called when the bubble bounces
-        """
         super(SoundBlock, self).__init__()
         self.sandbox = sandbox
         self.pos = np.array(pos, dtype=np.float)
@@ -93,6 +87,8 @@ class SoundBlockHandler(object):
 
         self.blocks = AnimGroup()
         self.sandbox.add(self.blocks)
+
+        self.gui = BlockGUI(pos=(20, 300)) # placeholder
 
     def on_touch_down(self, cid, pos):
         if not self.sandbox.in_bounds(pos):

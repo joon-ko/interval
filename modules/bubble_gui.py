@@ -60,8 +60,8 @@ class BubbleGUI(InstructionGroup):
         self.pos = pos
         self.size = (495, 730)
 
-        self.border_color = Color(1, 0, 0)
-        self.border = Line(rectangle=(*self.pos, *self.size))
+        self.border_color = Color(238/255, 142/255, 154/255) # peach
+        self.border = Line(rectangle=(*self.pos, *self.size), width=2)
         self.add(self.border_color)
         self.add(self.border)
 
@@ -117,8 +117,8 @@ class PitchSelect(InstructionGroup):
             8*self.white_key_size[0] + 7*self.key_margin + 2*self.margin,
             self.white_key_size[1] + 2*self.margin + 60
         )
-        self.border_color = Color(1, 0, 0)
-        self.border = Line(rectangle=(*self.pos, *self.size))
+        self.border_color = Color(238/255, 234/255, 202/255) # yellow
+        self.border = Line(rectangle=(*self.pos, *self.size), width=2)
         self.add(self.border_color)
         self.add(self.border)
 
@@ -277,8 +277,8 @@ class BounceSelect(InstructionGroup):
         self.margin = 20
         self.size = (210, 130)
 
-        self.border_color = Color(1, 0, 0)
-        self.border = Line(rectangle=(*self.pos, *self.size))
+        self.border_color = Color(170/255, 220/255, 206/255) # green
+        self.border = Line(rectangle=(*self.pos, *self.size), width=2)
         self.add(self.border_color)
         self.add(self.border)
 
@@ -385,8 +385,8 @@ class GravitySelect(InstructionGroup):
             2*self.margin + self.check_size[1]
         )
 
-        self.border_color = Color(1, 0, 0)
-        self.border = Line(rectangle=(*self.pos, *self.size))
+        self.border_color = Color(50/255, 147/255, 140/255) # bluegreen
+        self.border = Line(rectangle=(*self.pos, *self.size), width=2)
         self.add(self.border_color)
         self.add(self.border)
 
@@ -444,8 +444,8 @@ class TimbreSelect(InstructionGroup):
         self.white = (239/255, 226/255, 222/255)
         self.red = (201/255, 108/255, 130/255)
 
-        self.border_color = Color(1, 0, 0)
-        self.border = Line(rectangle=(*self.pos, *self.size))
+        self.border_color = Color(147/255, 127/255, 159/255) # purple
+        self.border = Line(rectangle=(*self.pos, *self.size), width=2)
         self.add(self.border_color)
         self.add(self.border)
 

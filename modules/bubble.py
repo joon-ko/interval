@@ -202,13 +202,12 @@ class PhysicsBubbleHandler(object):
 
         # GUI elements
         self.gui = BubbleGUI(
-            pos=(0, 300),
+            pos=(20, 300),
             pitch_callback=self.update_pitch,
             bounce_callback=self.update_bounces,
             gravity_callback=self.update_gravity,
             timbre_callback=self.update_timbre
         )
-        self.sandbox.add(self.gui)
 
     def on_touch_down(self, cid, pos):
         if cid == self.cid:
