@@ -84,7 +84,7 @@ class MainScreen(Screen):
 
         # sync with existing server state
         client.emit('sync_module_state', {'module': 'PhysicsBubble'})
-        # client.emit('sync_module_state', {'module': 'SoundBlock'})
+        client.emit('sync_module_state', {'module': 'SoundBlock'})
         # client.emit('sync_module_state', {'module': 'TempoCursor'})
 
     def on_touch_down(self, touch):

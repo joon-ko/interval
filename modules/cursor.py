@@ -16,13 +16,14 @@ class TempoCursor(InstructionGroup):
     """
     name = 'TempoCursor'
 
-    def __init__(self, pos, tempo, clock, tempo_map):
+    def __init__(self, norm, pos, tempo, clock, tempo_map):
         super(TempoCursor, self).__init__()
+        self.norm = norm
 
         self.cursor_color = Color(1, 1, 1)
         self.time_color = Color(159/255, 187/255, 208/255) # blue
 
-        self.cursor = CEllipse(cpos=pos, csize=(100, 100))
+        self.cursor = CEllipse(cpos=pos, csize=self.norm.nt((70, 70)))
         self.add(self.cursor_color)
         self.add(self.cursor)
 
@@ -32,7 +33,7 @@ class TempoCursor(InstructionGroup):
 
         self.add(PushMatrix())
         self.add(Translate(*pos))
-        self.time_marker = Line(points=(0, 0, 0, 40), width=3)
+        self.time_marker = Line(points=(0, 0, 0, self.norm.nv(30)), width=3)
         self.rotate = Rotate(angle=0)
         self.add(self.rotate)
         self.add(self.time_color)
@@ -73,7 +74,7 @@ class TempoCursorHandler(object):
         if not self.sandbox.in_bounds(pos):
             return
 
-        cursor = TempoCursor(pos, self.tempo, self.clock, self.tempo_map)
+        cursor = TempoCursor(self.norm, pos, self.tempo, self.clock, self.tempo_map)
         self.cursors.add(cursor)
 
     def on_touch_move(self, cid, pos):

@@ -84,9 +84,15 @@ PhysicsBubbleState = {
     'bounces': {},
     'gravity': {}
 }
+SoundBlockState = {
+    'color': {},
+    'pitch': {},
+    'timbre': {}
+}
 
 state_dict = {
-    'PhysicsBubble': PhysicsBubbleState
+    'PhysicsBubble': PhysicsBubbleState,
+    'SoundBlock': SoundBlockState
 }
 
 if __name__ == '__main__':

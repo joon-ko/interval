@@ -14,6 +14,18 @@ import numpy as np
 
 from modules.block_gui import BlockGUI
 
+def in_bounds(mouse_pos, obj_pos, obj_size):
+    """
+    Check if a mouse's position is inside an object.
+    :param mouse_pos: (x, y) mouse position
+    :param obj_pos: (x, y) object position
+    :param obj_size: (width, height) object size
+    """
+    return (mouse_pos[0] >= obj_pos[0]) and \
+           (mouse_pos[0] <= obj_pos[0] + obj_size[0]) and \
+           (mouse_pos[1] >= obj_pos[1]) and \
+           (mouse_pos[1] <= obj_pos[1] + obj_size[1])
+
 class SoundBlock(InstructionGroup):
     """
     This module is a rectangular, static block that plays a sound when either someone clicks it,
@@ -33,16 +45,25 @@ class SoundBlock(InstructionGroup):
             pos=self.pos,
             size=self.size,
         )
-        self.color = Color(239/255, 226/255, 222/255)
+        self.white = (239/255, 226/255, 222/255)
+        self.color = Color(*self.white)
         self.add(self.color)
         self.add(self.rect)
 
+        self.hit = False
+        self.hit_color = (201/255, 108/255, 130/255)
+        self.flash_anim = KFAnim((0, *self.hit_color), (.25, *self.white))
+
         self.time = 0
 
-        self.on_update(0)
-
     def on_update(self, dt):
-        pass
+        if self.hit:
+            rgb = self.flash_anim.eval(self.time)
+            self.color.rgb = rgb
+            self.time += dt
+            if not self.flash_anim.is_active(self.time):
+                self.hit = False
+                self.time = 0
 
 class SoundBlockHandler(object):
     """
@@ -62,6 +83,10 @@ class SoundBlockHandler(object):
         # with client ids as the keys.
         self.hold_point = {}
         self.hold_shape = {}
+
+        # this variable is needed for when a user clicks on a soundblock in a touch_down event,
+        # so that the corresponding touch_up event is skipped
+        self.skip = {}
 
         self.color_dict = {
             'red': (201/255, 108/255, 130/255),
@@ -94,6 +119,16 @@ class SoundBlockHandler(object):
     def on_touch_down(self, cid, pos):
         if not self.sandbox.in_bounds(pos):
             return
+
+        # when a block is clicked, flash and play a sound
+        # TempoCursors can call on_touch_down and can thus play SoundBlocks!
+        for block in self.blocks.objects:
+            if in_bounds(pos, block.pos, block.size):
+                self.sound(60, 'sine')
+                block.time = 0
+                block.hit = True
+                self.skip[cid] = True
+                return # don't start drawing a SoundBlock
 
         self.hold_point[cid] = pos
         self.hold_shape[cid] = Rectangle(pos = pos, size = (0,0))
@@ -131,6 +166,10 @@ class SoundBlockHandler(object):
 
     def on_touch_up(self, cid, pos):
         if not self.sandbox.in_bounds(pos):
+            return
+
+        if self.skip[cid]:
+            self.skip[cid] = False
             return
 
         bottom_left = self.hold_shape[cid].pos
@@ -188,6 +227,7 @@ class SoundBlockHandler(object):
         self.color[self.cid] = self.default_color
         self.pitch[self.cid] = self.default_pitch
         self.timbre[self.cid] = self.default_timbre
+        self.skip[self.cid] = False
 
         # now that default values are set, we can display this module's info
         self.display = True
