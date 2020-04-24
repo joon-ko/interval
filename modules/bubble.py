@@ -26,7 +26,7 @@ class PhysicsBubble(InstructionGroup):
     name = 'PhysicsBubble'
 
     def __init__(
-        self, norm, sandbox, pos, vel, pitch, timbre, color, bounces, gravity=False, callback=None
+        self, sandbox, pos, vel, pitch, timbre, color, bounces, handler, gravity=False, callback=None
     ):
         """
         :param norm: normalizer
@@ -56,6 +56,7 @@ class PhysicsBubble(InstructionGroup):
         self.bounces = bounces
         self.gravity = gravity
         self.callback = callback
+        self.handler = handler
 
         self.text = CLabelRect(cpos=pos, text=str(self.bounces))
         self.bubble = self.timbre_to_shape(self.timbre, pos)
@@ -90,6 +91,7 @@ class PhysicsBubble(InstructionGroup):
             self.pos += self.vel * dt
 
         if self.bounces > 0:
+            self.check_for_block_collisions()
             if self.check_for_collisions() and self.callback is not None:
                 self.callback(self.pitch, self.timbre)
         # second condition checks if bubble hasn't been moving but there's no gravity --
@@ -140,6 +142,52 @@ class PhysicsBubble(InstructionGroup):
             self.bounces -= 1
             self.text.set_text(str(self.bounces))
             return True
+
+    def check_for_block_collisions(self):
+        blocks = self.handler.block_handler.blocks.objects
+        for block in blocks:
+            left_x = block.pos[0]
+            right_x = block.pos[0] + block.size[0]
+            bottom_y = block.pos[1]
+            top_y = block.pos[1] + block.size[1]
+
+            if self.pos[0] + self.r >= left_x and \
+               self.pos[0]+self.r <= right_x and \
+                self.pos[1] >= bottom_y and self.pos[1] <= top_y: #going left
+
+                block.color.rgb = self.color.rgb
+                self.vel[0] *= -1
+                self.pos[0] = left_x - self.r
+                self.bounces -= 1
+
+            elif self.pos[0] - self.r <= right_x and \
+                 self.pos[0]-self.r >= left_x and \
+                self.pos[1] >= bottom_y and self.pos[1] <= top_y: #going right
+
+                block.color.rgb = self.color.rgb
+                self.vel[0]*=-1
+                self.pos[0] = right_x + self.r
+                self.bounces -= 1
+
+            elif self.pos[1] + self.r >= bottom_y and \
+                 self.pos[1] + self.r <= top_y and \
+                self.pos[0] >= left_x and self.pos[0] <= right_x: #going up
+
+                block.color.rgb = self.color.rgb
+                self.vel[1] *= -1
+                self.pos[1] = bottom_y - self.r
+                self.bounces -= 1
+
+            elif self.pos[1] - self.r <= top_y and \
+                 self.pos[1]-self.r >= bottom_y and \
+                self.pos[0] >= left_x and self.pos[0] <= right_x: #going down
+
+                block.color.rgb = self.color.rgb
+                self.vel[1] *= -1
+                self.pos[1] = top_y + self.r
+                self.bounces -= 1
+            else:
+                block.color.rgb = (239/255, 226/255, 222/255)
 
 class PhysicsBubbleHandler(object):
     """
@@ -286,7 +334,7 @@ class PhysicsBubbleHandler(object):
 
         # release the PhysicsBubble
         bubble = PhysicsBubble(
-            self.norm, self.sandbox, pos, vel, pitch, timbre, color, bounces,
+            self.norm, self.sandbox, pos, vel, pitch, timbre, color, bounces, self,
             gravity=gravity, callback=self.sound
         )
         self.bubbles.add(bubble)
@@ -365,49 +413,6 @@ class PhysicsBubbleHandler(object):
     def on_update(self):
         self.bubbles.on_update()
         self.gui.on_update(Window.mouse_pos)
-        self.check_for_block_collisions()
-
-    def check_for_block_collisions(self):
-        blocks = self.block_handler.blocks.objects
-        for bubble in self.bubbles.objects:
-            for block in blocks:
-
-                left_x = block.pos[0]
-                right_x = block.pos[0] + block.size[0]
-                bottom_y = block.pos[1]
-                top_y = block.pos[1] + block.size[1]
-
-                if bubble.pos[0]+bubble.r >= left_x and \
-                   bubble.pos[0]+bubble.r <= right_x and \
-                bubble.pos[1] >= bottom_y and bubble.pos[1] <= top_y: #going left
-                    block.color.rgb = bubble.color.rgb
-                    bubble.vel[0] *= -1
-                    bubble.pos[0] = left_x - bubble.r
-
-                elif bubble.pos[0]-bubble.r <= right_x and \
-                     bubble.pos[0]-bubble.r >= left_x and \
-                    bubble.pos[1] >= bottom_y and bubble.pos[1] <= top_y: #going right
-                    block.color.rgb = bubble.color.rgb
-                    bubble.vel[0]*=-1
-                    bubble.pos[0] = right_x + bubble.r
-
-                elif bubble.pos[1]+bubble.r >= bottom_y and \
-                     bubble.pos[1]+bubble.r <= top_y and \
-                    bubble.pos[0] >= left_x and bubble.pos[0] <= right_x: #going up
-                    block.color.rgb = bubble.color.rgb
-                    bubble.vel[1] *= -1
-                    bubble.pos[1] = bottom_y - bubble.r
-
-                elif bubble.pos[1]-bubble.r <= top_y and \
-                     bubble.pos[1]-bubble.r >= bottom_y and \
-                    bubble.pos[0] >= left_x and bubble.pos[0] <= right_x: #going down
-                    block.color.rgb = bubble.color.rgb
-                    bubble.vel[1] *= -1
-                    bubble.pos[1] = top_y + bubble.r
-                    # print("collision bottom")
-                else:
-                    block.color.rgb = (239/255, 226/255, 222/255)
-                    # print("no collision")
 
     def update_server_state(self, post=False):
         """Update server state. If post is True, relay this updated state to all clients."""
