@@ -160,8 +160,7 @@ class StartScreen(Screen):
     def on_layout(self, win_size):
         self.img.pos = (Window.width/2 - self.logo_size[0]/2, Window.height/2 - 50)
         self.create.pos = (Window.width/2 - self.button_size[0]/2, Window.height/2 - (325/2))
-        if self.create_click in self.children:
-            self.create_click.pos = (Window.width/2 - self.button_size[0]/2, Window.height/2 - (325/2))
+        self.create_click.pos = (Window.width/2 - self.button_size[0]/2, Window.height/2 - (325/2))
 
     def on_update(self):
         mouse_pos = Window.mouse_pos
