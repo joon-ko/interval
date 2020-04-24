@@ -33,12 +33,13 @@ class SoundBlock(InstructionGroup):
     """
     name = 'SoundBlock'
 
-    def __init__(self, sandbox, pos, size, flash, callback=None):
+    def __init__(self, norm, sandbox, pos, size, handler, callback=None):
         super(SoundBlock, self).__init__()
+        self.norm = norm
         self.sandbox = sandbox
         self.pos = np.array(pos, dtype=np.float)
         self.size = np.array(size, dtype=np.float)
-        self.flash = flash
+        self.handler = handler
         self.callback = callback
 
         self.rect = Rectangle(
@@ -55,6 +56,11 @@ class SoundBlock(InstructionGroup):
         self.flash_anim = KFAnim((0, *self.hit_color), (.25, *self.white))
 
         self.time = 0
+
+    def flash(self):
+        self.callback(60, 'sine')
+        self.time = 0
+        self.hit = True
 
     def on_update(self, dt):
         if self.hit:
@@ -124,9 +130,7 @@ class SoundBlockHandler(object):
         # TempoCursors can call on_touch_down and can thus play SoundBlocks!
         for block in self.blocks.objects:
             if in_bounds(pos, block.pos, block.size):
-                self.sound(60, 'sine')
-                block.time = 0
-                block.hit = True
+                block.flash()
                 self.skip[cid] = True
                 return # don't start drawing a SoundBlock
 
@@ -180,7 +184,7 @@ class SoundBlockHandler(object):
             return
 
         self.sandbox.remove(self.hold_shape[cid])
-        block = SoundBlock(self.sandbox, bottom_left, size, False, self.sound)
+        block = SoundBlock(self.norm, self.sandbox, bottom_left, size, self, self.sound)
         self.blocks.add(block)
 
     def on_key_down(self, cid, key):

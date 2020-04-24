@@ -164,9 +164,8 @@ class PhysicsBubble(InstructionGroup):
                 self.pos[0] = left_x - self.r
                 self.bounces -= 1
                 self.text.set_text(str(self.bounces))
+                block.flash()
 
-                block.time = 0
-                block.hit = True
                 collide = True
 
             # going right
@@ -178,9 +177,8 @@ class PhysicsBubble(InstructionGroup):
                 self.pos[0] = right_x + self.r
                 self.bounces -= 1
                 self.text.set_text(str(self.bounces))
+                block.flash()
 
-                block.time = 0
-                block.hit = True
                 collide = True
 
             # going up
@@ -192,9 +190,8 @@ class PhysicsBubble(InstructionGroup):
                 self.pos[1] = bottom_y - self.r
                 self.bounces -= 1
                 self.text.set_text(str(self.bounces))
+                block.flash()
 
-                block.time = 0
-                block.hit = True
                 collide = True
 
             # going down
@@ -206,9 +203,8 @@ class PhysicsBubble(InstructionGroup):
                 self.pos[1] = top_y + self.r
                 self.bounces -= 1
                 self.text.set_text(str(self.bounces))
+                block.flash()
 
-                block.time = 0
-                block.hit = True
                 collide = True
 
         return collide
