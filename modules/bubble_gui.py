@@ -5,6 +5,14 @@ from common.gfxutil import CLabelRect, CRectangle
 from kivy.graphics import Color, Line, Rectangle
 from kivy.graphics.instructions import InstructionGroup
 from kivy.core.image import Image
+from kivy.core.window import Window
+
+def nt(tup):
+    """
+    Given a tuple (x, y), return the normalized (x*Window.width, y*Window.height).
+    This is so that graphics display the same on both Windows and Mac screens.
+    """
+    return (tup[0] * Window.width, tup[1] * Window.height)
 
 def midi_pitch_to_note_name(pitch):
     """
@@ -58,17 +66,17 @@ class BubbleGUI(InstructionGroup):
         super(BubbleGUI, self).__init__()
 
         self.pos = pos
-        self.size = (495, 730)
+        self.size = nt((495/1600, 730/1200))
 
         self.border_color = Color(238/255, 142/255, 154/255) # peach
         self.border = Line(rectangle=(*self.pos, *self.size), width=2)
         self.add(self.border_color)
         self.add(self.border)
 
-        ps_pos = (self.pos[0] + 20, self.pos[1] + 20)
-        bs_pos = (self.pos[0] + 20, self.pos[1] + 300)
-        gs_pos = (self.pos[0] + 20, self.pos[1] + 450)
-        ts_pos = (self.pos[0] + 20, self.pos[1] + 560)
+        ps_pos = nt(((self.pos[0]+20)/1600, (self.pos[1]+20)/1200))
+        bs_pos = nt(((self.pos[0]+20)/1600, (self.pos[1]+300)/1200))
+        gs_pos = nt(((self.pos[0]+20)/1600, (self.pos[1]+450)/1200))
+        ts_pos = nt(((self.pos[0]+20)/1600, (self.pos[1]+560)/1200))
 
         self.ps = PitchSelect(pos=ps_pos, callback=pitch_callback)
         self.bs = BounceSelect(pos=bs_pos, callback=bounce_callback)
