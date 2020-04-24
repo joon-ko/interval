@@ -146,6 +146,8 @@ class PhysicsBubble(InstructionGroup):
             return True
 
     def check_for_block_collisions(self):
+        """Check to see if this bubble collided with any SoundBlocks."""
+        collide = False
         blocks = self.handler.block_handler.blocks.objects
         for block in blocks:
             left_x = block.pos[0]
@@ -163,7 +165,7 @@ class PhysicsBubble(InstructionGroup):
                 self.pos[0] = left_x - self.r
                 self.bounces -= 1
                 self.text.set_text(str(self.bounces))
-                return True
+                collide = True
 
             # going right
             elif self.pos[0] - self.r <= right_x and \
@@ -175,7 +177,7 @@ class PhysicsBubble(InstructionGroup):
                 self.pos[0] = right_x + self.r
                 self.bounces -= 1
                 self.text.set_text(str(self.bounces))
-                return True
+                collide = True
 
             # going up
             elif self.pos[1] + self.r >= bottom_y and \
@@ -187,7 +189,7 @@ class PhysicsBubble(InstructionGroup):
                 self.pos[1] = bottom_y - self.r
                 self.bounces -= 1
                 self.text.set_text(str(self.bounces))
-                return True
+                collide = True
 
             # going down
             elif self.pos[1] - self.r <= top_y and \
@@ -199,10 +201,10 @@ class PhysicsBubble(InstructionGroup):
                 self.pos[1] = top_y + self.r
                 self.bounces -= 1
                 self.text.set_text(str(self.bounces))
-                return True
+                collide = True
             else:
                 block.color.rgb = (239/255, 226/255, 222/255)
-                return False
+        return collide
 
 class PhysicsBubbleHandler(object):
     """
