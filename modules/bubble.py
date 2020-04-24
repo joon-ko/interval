@@ -26,7 +26,8 @@ class PhysicsBubble(InstructionGroup):
     name = 'PhysicsBubble'
 
     def __init__(
-        self, sandbox, pos, vel, pitch, timbre, color, bounces, handler, gravity=False, callback=None
+        self, norm, sandbox, pos, vel, pitch, timbre, color, bounces, handler,
+        gravity=False, callback=None
     ):
         """
         :param norm: normalizer
