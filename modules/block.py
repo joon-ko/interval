@@ -127,7 +127,6 @@ class SoundBlockHandler(object):
             return
 
         # when a block is clicked, flash and play a sound
-        # TempoCursors can call on_touch_down and can thus play SoundBlocks!
         for block in self.blocks.objects:
             if in_bounds(pos, block.pos, block.size):
                 block.flash()
