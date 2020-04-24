@@ -92,7 +92,8 @@ class PhysicsBubble(InstructionGroup):
             self.pos += self.vel * dt
 
         if self.bounces > 0:
-            self.check_for_block_collisions()
+            if self.check_for_block_collisions() and self.callback is not None:
+                self.callback(self.pitch, self.timbre)
             if self.check_for_collisions() and self.callback is not None:
                 self.callback(self.pitch, self.timbre)
         # second condition checks if bubble hasn't been moving but there's no gravity --
@@ -152,43 +153,56 @@ class PhysicsBubble(InstructionGroup):
             bottom_y = block.pos[1]
             top_y = block.pos[1] + block.size[1]
 
+            # going left
             if self.pos[0] + self.r >= left_x and \
                self.pos[0]+self.r <= right_x and \
-                self.pos[1] >= bottom_y and self.pos[1] <= top_y: #going left
+               self.pos[1] >= bottom_y and self.pos[1] <= top_y:
 
                 block.color.rgb = self.color.rgb
                 self.vel[0] *= -1
                 self.pos[0] = left_x - self.r
                 self.bounces -= 1
+                self.text.set_text(str(self.bounces))
+                return True
 
+            # going right
             elif self.pos[0] - self.r <= right_x and \
                  self.pos[0]-self.r >= left_x and \
-                self.pos[1] >= bottom_y and self.pos[1] <= top_y: #going right
+                 self.pos[1] >= bottom_y and self.pos[1] <= top_y:
 
                 block.color.rgb = self.color.rgb
                 self.vel[0]*=-1
                 self.pos[0] = right_x + self.r
                 self.bounces -= 1
+                self.text.set_text(str(self.bounces))
+                return True
 
+            # going up
             elif self.pos[1] + self.r >= bottom_y and \
                  self.pos[1] + self.r <= top_y and \
-                self.pos[0] >= left_x and self.pos[0] <= right_x: #going up
+                 self.pos[0] >= left_x and self.pos[0] <= right_x:
 
                 block.color.rgb = self.color.rgb
                 self.vel[1] *= -1
                 self.pos[1] = bottom_y - self.r
                 self.bounces -= 1
+                self.text.set_text(str(self.bounces))
+                return True
 
+            # going down
             elif self.pos[1] - self.r <= top_y and \
                  self.pos[1]-self.r >= bottom_y and \
-                self.pos[0] >= left_x and self.pos[0] <= right_x: #going down
+                 self.pos[0] >= left_x and self.pos[0] <= right_x:
 
                 block.color.rgb = self.color.rgb
                 self.vel[1] *= -1
                 self.pos[1] = top_y + self.r
                 self.bounces -= 1
+                self.text.set_text(str(self.bounces))
+                return True
             else:
                 block.color.rgb = (239/255, 226/255, 222/255)
+                return False
 
 class PhysicsBubbleHandler(object):
     """
