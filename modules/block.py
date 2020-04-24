@@ -49,7 +49,8 @@ class SoundBlockHandler(object):
     Handles user interaction and drawing of graphics before generating a SoundBlock.
     Also stores and updates all currently active SoundBlocks.
     """
-    def __init__(self, sandbox, mixer, client, client_id):
+    def __init__(self, norm, sandbox, mixer, client, client_id):
+        self.norm = norm
         self.module_name = 'SoundBlock'
         self.sandbox = sandbox
         self.mixer = mixer
@@ -88,7 +89,7 @@ class SoundBlockHandler(object):
         self.blocks = AnimGroup()
         self.sandbox.add(self.blocks)
 
-        self.gui = BlockGUI(pos=(20, 300)) # placeholder
+        self.gui = BlockGUI(self.norm, pos=self.norm.nt((20, 300))) # placeholder
 
     def on_touch_down(self, cid, pos):
         if not self.sandbox.in_bounds(pos):

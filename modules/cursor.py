@@ -52,7 +52,8 @@ class TempoCursorHandler(object):
     Handles the TempoCursor GUI.
     Also stores and updates all currently active TempoCursors.
     """
-    def __init__(self, sandbox, mixer, client, client_id, tempo=120):
+    def __init__(self, norm, sandbox, mixer, client, client_id, tempo=120):
+        self.norm = norm
         self.module_name = 'TempoCursor'
         self.sandbox = sandbox
         self.mixer = mixer
@@ -66,7 +67,7 @@ class TempoCursorHandler(object):
         self.cursors = AnimGroup()
         self.sandbox.add(self.cursors)
 
-        self.gui = CursorGUI(pos=(20, 300))
+        self.gui = CursorGUI(norm, pos=(20, 300))
 
     def on_touch_down(self, cid, pos):
         if not self.sandbox.in_bounds(pos):

@@ -15,24 +15,6 @@ import numpy as np
 from modules.bubble_gui import TimbreSelect, GravitySelect, BounceSelect, PitchSelect
 from modules.bubble_gui import BubbleGUI
 
-def timbre_to_shape(timbre, pos):
-    if timbre == 'sine':
-        return CEllipse(cpos=pos, size=(80, 80), segments=20)
-    elif timbre == 'triangle':
-        return CEllipse(cpos=pos, size=(90, 90), segments=3)
-    elif timbre == 'square':
-        return CRectangle(cpos=pos, size=(80, 80))
-    elif timbre == 'sawtooth':
-        # square rotated 45 degrees
-        return CEllipse(cpos=pos, size=(90, 90), segments=4)
-
-def nt(tup):
-    """
-    Given a tuple (x, y), return the normalized (x*Window.width, y*Window.height).
-    This is so that graphics display the same on both Windows and Mac screens.
-    """
-    return (tup[0] * Window.width, tup[1] * Window.height)
-
 downwards_gravity = np.array((0, -1800))
 damping_factor = 0.85
 
@@ -44,9 +26,10 @@ class PhysicsBubble(InstructionGroup):
     name = 'PhysicsBubble'
 
     def __init__(
-        self, sandbox, pos, vel, pitch, timbre, color, bounces, gravity=False, callback=None
+        self, norm, sandbox, pos, vel, pitch, timbre, color, bounces, gravity=False, callback=None
     ):
         """
+        :param norm: normalizer
         :param sandbox: client's sandbox
         :param pos: initial position
         :param vel: initial velocity
@@ -59,9 +42,10 @@ class PhysicsBubble(InstructionGroup):
         """
         super(PhysicsBubble, self).__init__()
 
+        self.norm = norm
         self.sandbox = sandbox
 
-        self.r = 40
+        self.r = self.norm.nv(40)
         self.pos = np.array(pos, dtype=np.float)
         self.vel = 2 * np.array(vel, dtype=np.float)
 
@@ -74,7 +58,7 @@ class PhysicsBubble(InstructionGroup):
         self.callback = callback
 
         self.text = CLabelRect(cpos=pos, text=str(self.bounces))
-        self.bubble = timbre_to_shape(self.timbre, pos)
+        self.bubble = self.timbre_to_shape(self.timbre, pos)
 
         self.add(self.color)
         self.add(self.bubble)
@@ -86,6 +70,17 @@ class PhysicsBubble(InstructionGroup):
         self.time = 0
 
         self.on_update(0)
+
+    def timbre_to_shape(self, timbre, pos):
+        if timbre == 'sine':
+            return CEllipse(cpos=pos, size=self.norm.nt((80, 80)), segments=20)
+        elif timbre == 'triangle':
+            return CEllipse(cpos=pos, size=self.norm.nt((90, 90)), segments=3)
+        elif timbre == 'square':
+            return CRectangle(cpos=pos, size=self.norm.nt((80, 80)))
+        elif timbre == 'sawtooth':
+            # square rotated 45 degrees
+            return CEllipse(cpos=pos, size=self.norm.nt((90, 90)), segments=4)
 
     def on_update(self, dt):
         if self.gravity:
@@ -152,7 +147,8 @@ class PhysicsBubbleHandler(object):
     Handles the PhysicsBubble GUI.
     Also stores and updates all currently active PhysicsBubbles.
     """
-    def __init__(self, sandbox, mixer, client, client_id, block_handler):
+    def __init__(self, norm, sandbox, mixer, client, client_id, block_handler):
+        self.norm = norm
         self.module_name = 'PhysicsBubble'
         self.sandbox = sandbox
         self.mixer = mixer
@@ -210,12 +206,23 @@ class PhysicsBubbleHandler(object):
 
         # GUI elements
         self.gui = BubbleGUI(
-            pos=nt((50/1600, 100/1200)),
+            self.norm, pos=self.norm.nt((50, 100)),
             pitch_callback=self.update_pitch,
             bounce_callback=self.update_bounces,
             gravity_callback=self.update_gravity,
             timbre_callback=self.update_timbre
         )
+
+    def timbre_to_shape(self, timbre, pos):
+        if timbre == 'sine':
+            return CEllipse(cpos=pos, size=self.norm.nt((80, 80)), segments=20)
+        elif timbre == 'triangle':
+            return CEllipse(cpos=pos, size=self.norm.nt((90, 90)), segments=3)
+        elif timbre == 'square':
+            return CRectangle(cpos=pos, size=self.norm.nt((80, 80)))
+        elif timbre == 'sawtooth':
+            # square rotated 45 degrees
+            return CEllipse(cpos=pos, size=self.norm.nt((90, 90)), segments=4)
 
     def on_touch_down(self, cid, pos):
         if cid == self.cid:
@@ -226,7 +233,7 @@ class PhysicsBubbleHandler(object):
 
         # start drawing drag line and preview of the PhysicsBubble
         self.hold_point[cid] = pos
-        self.hold_shape[cid] = timbre_to_shape(self.timbre[cid], pos)
+        self.hold_shape[cid] = self.timbre_to_shape(self.timbre[cid], pos)
         self.hold_line[cid] = Line(points=(*pos, *pos), width=3)
         self.text[cid] = CLabelRect(cpos=pos, text=str(self.bounces[cid]))
 
@@ -279,7 +286,7 @@ class PhysicsBubbleHandler(object):
 
         # release the PhysicsBubble
         bubble = PhysicsBubble(
-            self.sandbox, pos, vel, pitch, timbre, color, bounces,
+            self.norm, self.sandbox, pos, vel, pitch, timbre, color, bounces,
             gravity=gravity, callback=self.sound
         )
         self.bubbles.add(bubble)

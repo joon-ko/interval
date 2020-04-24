@@ -29,16 +29,22 @@ register_terminate_func(client.disconnect)
 # functions, especially module handler functions, to make sure all users are synced.
 client_id = client.sid
 
-def nt(tup):
-    """
-    Given a tuple (x, y), return the normalized (x*Window.width, y*Window.height).
-    This is so that graphics display the same on both Windows and Mac screens.
-    """
-    return (tup[0] * Window.width, tup[1] * Window.height)
+class Normalizer(object):
+    def __init__(self, mode):
+        self.mode = mode # either 'mac' or 'pc'
+
+    def nt(self, tup):
+        return (tup[0]/2, tup[1]/2) if self.mode == 'pc' else tup
+
+    def nv(self, val):
+        return val/2 if self.mode == 'pc' else val
 
 class MainScreen(Screen):
     def __init__(self, **kwargs):
         super(MainScreen, self).__init__(**kwargs)
+
+        mode = 'mac' if (len(sys.argv) == 2) and (sys.argv[1] == 'mac') else 'pc'
+        self.norm = Normalizer(mode)
 
         self.info = topleft_label()
         self.add_widget(self.info)
@@ -50,8 +56,8 @@ class MainScreen(Screen):
 
         self.sandbox = Sandbox(
             canvas=self.canvas,
-            pos=nt((580/1600, 50/1200)),
-            size=(.625 * Window.width, .625 * Window.width)
+            pos=self.norm.nt((580, 50)),
+            size=self.norm.nt((1000, 1000))
         )
 
         # since putting all our sound module code in MainScreen would be a nightmare, we've
@@ -64,11 +70,11 @@ class MainScreen(Screen):
             'SoundBlock': SoundBlock,
             'TempoCursor': TempoCursor
         }
-        sound = SoundBlockHandler(self.sandbox, self.mixer, client, client_id)
+        sound = SoundBlockHandler(self.norm, self.sandbox, self.mixer, client, client_id)
         self.module_handlers = {
             'SoundBlock': sound,
-            'PhysicsBubble': PhysicsBubbleHandler(self.sandbox, self.mixer, client, client_id, sound),
-            'TempoCursor': TempoCursorHandler(self.sandbox, self.mixer, client, client_id)
+            'PhysicsBubble': PhysicsBubbleHandler(self.norm, self.sandbox, self.mixer, client, client_id, sound),
+            'TempoCursor': TempoCursorHandler(self.norm, self.sandbox, self.mixer, client, client_id)
         }
 
         # name a default starting module and handler
