@@ -112,13 +112,13 @@ class PitchSelect(InstructionGroup):
         ]
         self.callback = callback
         self.pos = pos
-        self.margin = 20
-        self.white_key_size = (50, 150)
-        self.black_key_size = (40, 100)
-        self.key_margin = 2 # pixels of space between keys
+        self.margin = self.norm.nv(20)
+        self.white_key_size = self.norm.nt((50, 150))
+        self.black_key_size = self.norm.nt((40, 100))
+        self.key_margin = self.norm.nv(2) # pixels of space between keys
         self.size = (
             8*self.white_key_size[0] + 7*self.key_margin + 2*self.margin,
-            self.white_key_size[1] + 2*self.margin + 60
+            self.white_key_size[1] + 2*self.margin + self.norm.nv(60)
         )
         self.border_color = Color(238/255, 234/255, 202/255) # yellow
         self.border = Line(rectangle=(*self.pos, *self.size), width=2)
@@ -139,7 +139,7 @@ class PitchSelect(InstructionGroup):
         for i, m in zip(self.black_keys, black_key_units):
             self.keys[i] = CRectangle(
                 csize=self.black_key_size,
-                cpos=(key_start[0] + m*unit, key_start[1] + 100)
+                cpos=(key_start[0] + m*unit, key_start[1] + self.norm.nv(100))
             )
 
         self.key_colors = [None] * 13
@@ -153,10 +153,10 @@ class PitchSelect(InstructionGroup):
             self.add(self.keys[i])
         self.key_colors[0].rgb = self.green
 
-        self.arrow_size = (50, 50)
+        self.arrow_size = self.norm.nt((50, 50))
         self.left_pos = (
             self.pos[0] + self.margin,
-            self.pos[1] + self.size[1] - self.arrow_size[1] - 10
+            self.pos[1] + self.size[1] - self.arrow_size[1] - self.norm.nv(10)
         )
         self.left_off = Rectangle(
             pos=self.left_pos,
@@ -170,7 +170,7 @@ class PitchSelect(InstructionGroup):
         )
         self.right_pos = (
             self.pos[0] + self.size[0] - self.margin - self.arrow_size[0],
-            self.pos[1] + self.size[1] - self.arrow_size[1] - 10
+            self.pos[1] + self.size[1] - self.arrow_size[1] - self.norm.nv(10)
         )
         self.right_off = Rectangle(
             pos=self.right_pos,
@@ -190,7 +190,7 @@ class PitchSelect(InstructionGroup):
 
         title_pos = (
             self.pos[0] + self.size[0]/2,
-            self.pos[1] + self.size[1] - self.margin - 20
+            self.pos[1] + self.size[1] - self.margin - self.norm.nv(20)
         )
         self.title = CLabelRect(
             cpos=title_pos,
@@ -278,15 +278,15 @@ class BounceSelect(InstructionGroup):
 
         self.callback = callback
         self.pos = pos
-        self.margin = 20
-        self.size = (210, 130)
+        self.margin = self.norm.nv(20)
+        self.size = self.norm.nt((210, 130))
 
         self.border_color = Color(170/255, 220/255, 206/255) # green
         self.border = Line(rectangle=(*self.pos, *self.size), width=2)
         self.add(self.border_color)
         self.add(self.border)
 
-        self.arrow_size = (50, 50)
+        self.arrow_size = self.norm.nt((50, 50))
         self.left_pos = (
             self.pos[0] + self.margin,
             self.pos[1] + self.margin
@@ -321,7 +321,7 @@ class BounceSelect(InstructionGroup):
         self.add(self.left_off)
         self.add(self.right_off)
 
-        title_pos = (self.pos[0] + self.size[0]/2, self.pos[1] + self.size[1] - 30)
+        title_pos = (self.pos[0] + self.size[0]/2, self.pos[1] + self.size[1] - self.norm.nv(30))
         self.title = CLabelRect(cpos=title_pos, text='bounces', font_size='18')
         self.add(self.title)
 
@@ -383,10 +383,10 @@ class GravitySelect(InstructionGroup):
 
         self.callback = callback
         self.pos = pos
-        self.margin = 20
-        self.check_size = (50, 50)
+        self.margin = self.norm.nv(20)
+        self.check_size = self.norm.nt((50, 50))
         self.size = (
-            210,
+            self.norm.nv(210),
             2*self.margin + self.check_size[1]
         )
 
@@ -409,7 +409,10 @@ class GravitySelect(InstructionGroup):
         self.add(self.check_color)
         self.add(self.off)
 
-        title_pos = (self.pos[0] + 140, self.pos[1] + self.check_size[1]/2 + self.margin)
+        title_pos = (
+            self.pos[0] + self.norm.nv(140),
+            self.pos[1] + self.check_size[1]/2 + self.margin
+        )
         self.title = CLabelRect(cpos=title_pos, text='gravity', font_size='18')
         self.add(Color(1, 1, 1))
         self.add(self.title)
@@ -439,9 +442,9 @@ class TimbreSelect(InstructionGroup):
 
         self.callback = callback
         self.pos = pos
-        self.margin = 20
-        self.button_length = 64
-        self.title_height = 50 # height of the word 'timbre'
+        self.margin = self.norm.nv(20)
+        self.button_length = self.norm.nv(64)
+        self.title_height = self.norm.nv(50) # height of the word 'timbre'
         self.size = (
             (4 * self.button_length) + (5 * self.margin),
             self.button_length + (2 * self.margin) + self.title_height
