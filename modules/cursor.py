@@ -1,13 +1,27 @@
+import copy, math
 import sys, os
 sys.path.insert(0, os.path.abspath('..'))
 
-from common.clock import Clock, SimpleTempoMap, tick_str, kTicksPerQuarter
+from common.clock import Clock, SimpleTempoMap, Scheduler
+from common.clock import tick_str, kTicksPerQuarter, quantize_tick_up
 from common.gfxutil import CEllipse, AnimGroup
 from kivy.graphics import Color, Line, Rectangle
 from kivy.graphics import PushMatrix, PopMatrix, Rotate, Translate
 from kivy.graphics.instructions import InstructionGroup
 
 from modules.cursor_gui import CursorGUI
+
+def in_bounds(mouse_pos, obj_pos, obj_size):
+    """
+    Check if a mouse's position is inside an object.
+    :param mouse_pos: (x, y) mouse position
+    :param obj_pos: (x, y) object position
+    :param obj_size: (width, height) object size
+    """
+    return (mouse_pos[0] >= obj_pos[0]) and \
+           (mouse_pos[0] <= obj_pos[0] + obj_size[0]) and \
+           (mouse_pos[1] >= obj_pos[1]) and \
+           (mouse_pos[1] <= obj_pos[1] + obj_size[1])
 
 class TempoCursor(InstructionGroup):
     """
@@ -16,50 +30,108 @@ class TempoCursor(InstructionGroup):
     """
     name = 'TempoCursor'
 
-    def __init__(self, norm, pos, tempo, clock, tempo_map):
+    def __init__(self, norm, pos, tempo, clock, tempo_map, touch_points, block_handler):
         super(TempoCursor, self).__init__()
         self.norm = norm
-
-        self.cursor_color = Color(1, 1, 1)
-        self.time_color = Color(159/255, 187/255, 208/255) # blue
+        self.pos = pos
 
         self.cursor = CEllipse(cpos=pos, csize=self.norm.nt((70, 70)))
-        self.add(self.cursor_color)
+        self.add(Color(1, 1, 1))
         self.add(self.cursor)
 
         self.tempo = tempo
         self.clock = clock
         self.tempo_map = tempo_map
+        self.sched = Scheduler(self.clock, self.tempo_map)
 
+        self.block_handler = block_handler
+
+        # 0..15, for 16th note granularity
+        self.touch_points = touch_points
+        self.index = 0
+
+        # add touch markers
+        self.add(PushMatrix())
+        self.add(Translate(*pos))
+        for touch_point in self.touch_points:
+            self.add(Rotate(angle = -360 * touch_point / 16))
+            self.add(Color(159/255, 187/255, 208/255)) # blue
+            self.add(Line(points=(0, 0, 0, self.norm.nv(25)), width=2))
+            self.add(Rotate(angle = 360 * touch_point / 16))
+        self.add(PopMatrix())
+
+        # add current time marker
         self.add(PushMatrix())
         self.add(Translate(*pos))
         self.time_marker = Line(points=(0, 0, 0, self.norm.nv(30)), width=3)
         self.rotate = Rotate(angle=0)
         self.add(self.rotate)
-        self.add(self.time_color)
+        self.add(Color(0, 0, 0))
         self.add(self.time_marker)
         self.add(PopMatrix())
 
         self.on_update(0)
 
+        cur_tick = self.sched.get_tick()
+        next_tick = quantize_tick_up(cur_tick, kTicksPerQuarter * 4)
+        next_tick += self.calculate_tick_interval(0, self.touch_points[0])
+        self.sched.post_at_tick(self.touch_down, next_tick)
+
     def on_update(self, dt):
-        cur_time = self.clock.get_time()
-        cur_tick = self.tempo_map.time_to_tick(cur_time)
+        self.sched.on_update()
+
+        cur_time = self.sched.get_time()
+        cur_tick = self.sched.get_tick()
         angle = (360 * (cur_tick / (kTicksPerQuarter * 4))) % 360
         self.rotate.angle = -angle
+
+    def calculate_tick_interval(self, p1, p2):
+        if p2 > p1:
+            return (p2 - p1)/4 * kTicksPerQuarter
+        elif p1 > p2:
+            return (p2 + 16 - p1)/4 * kTicksPerQuarter
+        else:
+            return 0
+
+    def round_to_sixteenth(self, tick):
+        kTicksPerSixteenth = kTicksPerQuarter / 4
+        kTicksPerMeasure = kTicksPerQuarter * 4
+        measure = math.floor(tick / kTicksPerMeasure)
+        beat = round(16 * ((tick % kTicksPerMeasure) / kTicksPerMeasure))
+        return measure * kTicksPerMeasure + (beat * kTicksPerSixteenth)
+
+    def touch_down(self, tick):
+        self._touch_down()
+
+        cur_tick = self.round_to_sixteenth(self.sched.get_tick())
+        p1 = self.touch_points[self.index]
+        next_index = (self.index + 1) % len(self.touch_points)
+        p2 = self.touch_points[next_index]
+        interval = self.calculate_tick_interval(p1, p2)
+        next_tick = cur_tick + interval
+
+        self.index = next_index
+
+        self.sched.post_at_tick(self.touch_down, next_tick)
+
+    def _touch_down(self):
+        for block in self.block_handler.blocks.objects:
+            if in_bounds(self.pos, block.pos, block.size):
+                block.flash()
 
 class TempoCursorHandler(object):
     """
     Handles the TempoCursor GUI.
     Also stores and updates all currently active TempoCursors.
     """
-    def __init__(self, norm, sandbox, mixer, client, client_id, tempo=120):
+    def __init__(self, norm, sandbox, mixer, client, client_id, block_handler, tempo=60):
         self.norm = norm
         self.module_name = 'TempoCursor'
         self.sandbox = sandbox
         self.mixer = mixer
         self.client = client
         self.cid = client_id
+        self.block_handler = block_handler
 
         self.tempo = tempo
         self.clock = Clock()
@@ -68,13 +140,19 @@ class TempoCursorHandler(object):
         self.cursors = AnimGroup()
         self.sandbox.add(self.cursors)
 
-        self.gui = CursorGUI(norm, pos=(20, 300))
+        self.gui = CursorGUI(norm, pos=self.norm.nt((20, 300)))
 
     def on_touch_down(self, cid, pos):
+        if cid == self.cid:
+            self.gui.on_touch_down(pos)
+
         if not self.sandbox.in_bounds(pos):
             return
 
-        cursor = TempoCursor(self.norm, pos, self.tempo, self.clock, self.tempo_map)
+        cursor = TempoCursor(
+            self.norm, pos, self.tempo, self.clock, self.tempo_map,
+            copy.deepcopy(self.gui.bs.touch_points), self.block_handler
+        )
         self.cursors.add(cursor)
 
     def on_touch_move(self, cid, pos):

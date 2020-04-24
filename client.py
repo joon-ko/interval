@@ -70,11 +70,11 @@ class MainScreen(Screen):
             'SoundBlock': SoundBlock,
             'TempoCursor': TempoCursor
         }
-        sound = SoundBlockHandler(self.norm, self.sandbox, self.mixer, client, client_id)
+        block = SoundBlockHandler(self.norm, self.sandbox, self.mixer, client, client_id)
         self.module_handlers = {
-            'SoundBlock': sound,
-            'PhysicsBubble': PhysicsBubbleHandler(self.norm, self.sandbox, self.mixer, client, client_id, sound),
-            'TempoCursor': TempoCursorHandler(self.norm, self.sandbox, self.mixer, client, client_id)
+            'SoundBlock': block,
+            'PhysicsBubble': PhysicsBubbleHandler(self.norm, self.sandbox, self.mixer, client, client_id, block),
+            'TempoCursor': TempoCursorHandler(self.norm, self.sandbox, self.mixer, client, client_id, block)
         }
 
         # name a default starting module and handler

@@ -4,11 +4,15 @@ sys.path.insert(0, os.path.abspath('..'))
 from common.core import lookup
 from common.gfxutil import topleft_label, CEllipse, CRectangle, CLabelRect, AnimGroup, KFAnim
 from common.note import NoteGenerator, Envelope
+from common.synth import Synth
+from common.audio import Audio
+
 from kivy.graphics import Color, Line, Rectangle
 from kivy.graphics.instructions import InstructionGroup
 from kivy.core.image import Image
 from kivy.core.window import Window
 from kivy.clock import Clock as kivyClock
+from common.clock import Clock, SimpleTempoMap, Scheduler, AudioScheduler, tick_str, kTicksPerQuarter
 
 import numpy as np
 
@@ -54,12 +58,16 @@ class SoundBlock(InstructionGroup):
         self.hit = False
         self.hit_color = (201/255, 108/255, 130/255)
         self.flash_anim = KFAnim((0, *self.hit_color), (.25, *self.white))
+        self.pitch = 60
+        self.clock = Clock()
+        self.tempo_map = SimpleTempoMap(120)
+        self.sched = Scheduler(self.clock, self.tempo_map)
 
         self.time = 0
 
     def flash(self):
-        self.callback(60, 'sine')
-        self.time = 0
+        self.callback(self.pitch, 'sine')
+        self.time = self.sched.get_time()
         self.hit = True
 
     def on_update(self, dt):
@@ -80,9 +88,19 @@ class SoundBlockHandler(object):
         self.norm = norm
         self.module_name = 'SoundBlock'
         self.sandbox = sandbox
-        self.mixer = mixer
+        #self.mixer = mixer
+        self.clock = Clock()
+        self.tempo_map = SimpleTempoMap(120)
+        self.audio = Audio(2)
+        self.synth = Synth("data/FluidR3_GM.sf2")
+        self.sched = Scheduler(self.clock, self.tempo_map)
+        self.audio.set_generator(self.synth)
         self.client = client
         self.cid = client_id
+
+        #set up the correct sound (program: bank and preset)
+        self.synth.program(0, 0, 80) #default to piano
+        self.playing = False
 
         # many variables here are dicts because a user's module handler needs to keep track of
         # not just its own variables, but other users' variables as well! so we use dictionaries
@@ -127,7 +145,6 @@ class SoundBlockHandler(object):
             return
 
         # when a block is clicked, flash and play a sound
-        # TempoCursors can call on_touch_down and can thus play SoundBlocks!
         for block in self.blocks.objects:
             if in_bounds(pos, block.pos, block.size):
                 block.flash()
@@ -195,6 +212,12 @@ class SoundBlockHandler(object):
 
     def on_update(self):
         self.blocks.on_update()
+        self.audio.on_update()
+        self.sched.on_update()
+
+        for block in self.blocks.objects:
+            if self.sched.get_time() > block.time + 1:
+                    self.synth.noteoff(0, block.pitch)
 
     def update_server_state(self, post=False):
         """
@@ -245,9 +268,8 @@ class SoundBlockHandler(object):
         """
         Play a sound when a PhysicsBubble collides with a collidable object.
         """
-        note = NoteGenerator(pitch, 1, timbre)
-        env = Envelope(note, 0.01, 1, 0.2, 2)
-        self.mixer.add(env)
+        self.synth.noteon(0, pitch, 100)
+
 
     def calculate_size(self, corner, pos):
         x = abs(pos[0]-corner[0])
