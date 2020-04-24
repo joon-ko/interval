@@ -26,6 +26,13 @@ def timbre_to_shape(timbre, pos):
         # square rotated 45 degrees
         return CEllipse(cpos=pos, size=(90, 90), segments=4)
 
+def nt(tup):
+    """
+    Given a tuple (x, y), return the normalized (x*Window.width, y*Window.height).
+    This is so that graphics display the same on both Windows and Mac screens.
+    """
+    return (tup[0] * Window.width, tup[1] * Window.height)
+
 downwards_gravity = np.array((0, -1800))
 damping_factor = 0.85
 
@@ -203,7 +210,7 @@ class PhysicsBubbleHandler(object):
 
         # GUI elements
         self.gui = BubbleGUI(
-            pos=(20, 300),
+            pos=nt((50/1600, 100/1200)),
             pitch_callback=self.update_pitch,
             bounce_callback=self.update_bounces,
             gravity_callback=self.update_gravity,

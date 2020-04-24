@@ -29,6 +29,13 @@ register_terminate_func(client.disconnect)
 # functions, especially module handler functions, to make sure all users are synced.
 client_id = client.sid
 
+def nt(tup):
+    """
+    Given a tuple (x, y), return the normalized (x*Window.width, y*Window.height).
+    This is so that graphics display the same on both Windows and Mac screens.
+    """
+    return (tup[0] * Window.width, tup[1] * Window.height)
+
 class MainScreen(Screen):
     def __init__(self, **kwargs):
         super(MainScreen, self).__init__(**kwargs)
@@ -41,7 +48,11 @@ class MainScreen(Screen):
         self.mixer.set_gain(1.0)
         self.audio.set_generator(self.mixer)
 
-        self.sandbox = Sandbox(canvas=self.canvas, pos=(580, 20), size=(1000, 1000))
+        self.sandbox = Sandbox(
+            canvas=self.canvas,
+            pos=nt((580/1600, 50/1200)),
+            size=(.625 * Window.width, .625 * Window.width)
+        )
 
         # since putting all our sound module code in MainScreen would be a nightmare, we've
         # modularized our modules into separate files. each module has two classes, the sound
