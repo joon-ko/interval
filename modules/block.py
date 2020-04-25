@@ -36,7 +36,7 @@ class SoundBlock(InstructionGroup):
     """
     name = 'SoundBlock'
 
-    def __init__(self, norm, sandbox, pos, size, handler, callback=None):
+    def __init__(self, norm, sandbox, pos, size, channel, handler, callback=None):
         super(SoundBlock, self).__init__()
         self.norm = norm
         self.sandbox = sandbox
@@ -59,11 +59,12 @@ class SoundBlock(InstructionGroup):
         self.flash_anim = KFAnim((0, *self.hit_color), (.5, *self.white))
 
         self.pitch = 60
+        self.channel = channel
 
         self.time = 0
 
     def flash(self):
-        self.callback(self.pitch)
+        self.callback(self.channel, self.pitch)
         self.time = 0
         self.hit = True
 
@@ -92,16 +93,18 @@ class SoundBlockHandler(object):
         self.synth = Synth("data/FluidR3_GM.sf2")
         self.sched.set_generator(self.synth)
         self.mixer.add(self.sched)
-        self.cmd = None
+        self.cmd = {}
 
         self.client = client
         self.cid = client_id
         self.instruments = {'piano': 1, 'violin': 41, 'trumpet': 57, 'flute': 74, 'clarinet': 72}
+        self.inst_list = ['piano', 'violin', 'trumpet', 'flute', 'clarinet']
+        self.channel = 0
 
-        #set up the correct sound (program: bank and preset)
-        self.cur_instrument = 'piano'
-        self.synth.program(0, 0, self.instruments[self.cur_instrument]) #default to piano
-        self.playing = False
+        # set up the correct sound (program: bank and preset)
+        # each instrument is on a different channel
+        for index, inst in enumerate(self.inst_list):
+            self.synth.program(index, 0, self.instruments[inst])
 
         # many variables here are dicts because a user's module handler needs to keep track of
         # not just its own variables, but other users' variables as well! so we use dictionaries
@@ -112,6 +115,9 @@ class SoundBlockHandler(object):
         # this variable is needed for when a user clicks on a soundblock in a touch_down event,
         # so that the corresponding touch_up event is skipped
         self.skip = {}
+
+        # for race conditions when on_touch_up occurs before on_touch_down
+        self.draw_skip = {}
 
         self.color_dict = {
             'red': (201/255, 108/255, 130/255),
@@ -155,6 +161,11 @@ class SoundBlockHandler(object):
         self.hold_point[cid] = pos
         self.hold_shape[cid] = Rectangle(pos = pos, size = (0,0))
 
+        if self.draw_skip.get(cid):
+            print('boo')
+            self.draw_skip[cid] = False
+            return
+
         self.sandbox.add(Color(1, 1, 1))
         self.sandbox.add(self.hold_shape[cid])
 
@@ -187,12 +198,16 @@ class SoundBlockHandler(object):
         self.hold_shape[cid].size = size
 
     def on_touch_up(self, cid, pos):
-        if not self.sandbox.in_bounds(pos):
-            return
-
         if self.skip[cid]:
             self.skip[cid] = False
             return
+
+        if self.hold_shape.get(cid) not in self.sandbox:
+            if not self.sandbox.in_bounds(pos):
+                return
+            else:
+                self.draw_skip[cid] = True
+                return
 
         bottom_left = self.hold_shape[cid].pos
         size = self.hold_shape[cid].size
@@ -202,23 +217,19 @@ class SoundBlockHandler(object):
             return
 
         self.sandbox.remove(self.hold_shape[cid])
-        block = SoundBlock(self.norm, self.sandbox, bottom_left, size, self, self.sound)
+        block = SoundBlock(
+            self.norm, self.sandbox, bottom_left, size, self.channel, self, self.sound
+        )
         self.blocks.add(block)
 
     def on_key_down(self, cid, key):
         if self.cid == cid:
             direction = lookup(key, ['right', 'left'], [1, -1])
             if direction is not None:
-                self.switch_instrument(direction)
+                self.channel = (self.channel + direction) % len(self.inst_list)
 
     def display_controls(self):
-        return ('instrument: ' + self.cur_instrument)
-
-    def switch_instrument(self, direction):
-        cur_pos = list(self.instruments.keys()).index(self.cur_instrument)
-        new_pos = (cur_pos + direction)%len(self.instruments)
-        self.cur_instrument = list(self.instruments.keys())[new_pos]
-        self.synth.program(0, 0, self.instruments[self.cur_instrument]) 
+        return ('instrument: ' + self.inst_list[self.channel])
 
     def on_update(self):
         self.blocks.on_update()
@@ -259,6 +270,7 @@ class SoundBlockHandler(object):
         self.pitch[self.cid] = self.default_pitch
         self.timbre[self.cid] = self.default_timbre
         self.skip[self.cid] = False
+        self.draw_skip[self.cid] = False
 
         # now that default values are set, we can display this module's info
         self.display = True
@@ -268,18 +280,19 @@ class SoundBlockHandler(object):
         # default values.
         self.update_server_state(post=True)
 
-    def sound(self, pitch):
+    def sound(self, channel, pitch):
         """
-        Play a sound when a PhysicsBubble collides with a collidable object.
+        Play a sound with a given pitch on the given channel.
         """
-        if self.cmd:
-            self.sched.cancel(self.cmd)
-        self.synth.noteon(0, pitch, 100)
+        if self.cmd.get(channel):
+            self.sched.cancel(self.cmd[channel])
+        self.synth.noteon(channel, pitch, 100)
         now = self.sched.get_tick()
-        self.cmd = self.sched.post_at_tick(self._noteoff, now + 240, pitch)
+        self.cmd[channel] = self.sched.post_at_tick(self._noteoff, now + 240, (channel, pitch))
 
-    def _noteoff(self, tick, pitch):
-        self.synth.noteoff(0, pitch)
+    def _noteoff(self, tick, args):
+        channel, pitch = args
+        self.synth.noteoff(channel, pitch)
 
     def calculate_size(self, corner, pos):
         x = abs(pos[0]-corner[0])
