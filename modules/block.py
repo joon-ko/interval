@@ -97,9 +97,11 @@ class SoundBlockHandler(object):
         self.audio.set_generator(self.synth)
         self.client = client
         self.cid = client_id
+        self.instruments = {'piano': 1, 'violin': 41, 'trumpet': 57, 'flute': 74, 'clarinet': 72}
 
         #set up the correct sound (program: bank and preset)
-        self.synth.program(0, 0, 80) #default to piano
+        self.cur_instrument = 'piano'
+        self.synth.program(0, 0, self.instruments[self.cur_instrument]) #default to piano
         self.playing = False
 
         # many variables here are dicts because a user's module handler needs to keep track of
@@ -205,10 +207,18 @@ class SoundBlockHandler(object):
         self.blocks.add(block)
 
     def on_key_down(self, cid, key):
-        pass
-
+        if self.cid == cid:
+            direction = lookup(key, ['right', 'left'], [1, -1])
+            self.switch_instrument(direction)
+            
     def display_controls(self):
-        return 'this module\'s info coming soon!'
+        return ('instrument: ' + self.cur_instrument)
+
+    def switch_instrument(self, direction):
+        cur_pos = list(self.instruments.keys()).index(self.cur_instrument)
+        new_pos = (cur_pos + direction)%len(self.instruments)
+        self.cur_instrument = list(self.instruments.keys())[new_pos]
+        self.synth.program(0, 0, self.instruments[self.cur_instrument]) 
 
     def on_update(self):
         self.blocks.on_update()
