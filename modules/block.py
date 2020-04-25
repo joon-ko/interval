@@ -297,11 +297,11 @@ class SoundBlockHandler(object):
         """
         Play a sound with a given pitch on the given channel.
         """
-        if self.cmd.get(channel):
-            self.sched.cancel(self.cmd[channel])
+        if self.cmd.get((channel, pitch)):
+            self.sched.cancel(self.cmd[(channel, pitch)])
         self.synth.noteon(channel, pitch, 100)
         now = self.sched.get_tick()
-        self.cmd[channel] = self.sched.post_at_tick(self._noteoff, now + 240, (channel, pitch))
+        self.cmd[(channel, pitch)] = self.sched.post_at_tick(self._noteoff, now + 240, (channel, pitch))
 
     def update_pitch(self, color, pitch):
         """Update this client's color and pitch due to PitchSelect."""
