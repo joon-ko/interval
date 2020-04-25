@@ -104,10 +104,11 @@ class TempoCursor(InstructionGroup):
         self._touch_down()
 
         cur_tick = self.round_to_sixteenth(self.sched.get_tick())
-        p1 = self.touch_points[self.index]
         next_index = (self.index + 1) % len(self.touch_points)
+        p1 = self.touch_points[self.index]
         p2 = self.touch_points[next_index]
-        interval = self.calculate_tick_interval(p1, p2)
+        interval = kTicksPerQuarter * 4 if len(self.touch_points) == 1 \
+              else self.calculate_tick_interval(p1, p2)
         next_tick = cur_tick + interval
 
         self.index = next_index
@@ -149,9 +150,12 @@ class TempoCursorHandler(object):
         if not self.sandbox.in_bounds(pos):
             return
 
+        touch_points = self.gui.bs.touch_points
+        if len(touch_points) == 0:
+            return
         cursor = TempoCursor(
             self.norm, pos, self.tempo, self.clock, self.tempo_map,
-            copy.deepcopy(self.gui.bs.touch_points), self.block_handler
+            copy.deepcopy(touch_points), self.block_handler
         )
         self.cursors.add(cursor)
 
