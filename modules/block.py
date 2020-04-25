@@ -58,6 +58,10 @@ class SoundBlock(InstructionGroup):
         self.pitch = pitch
         self.hit_color = color
 
+        self.add(Color(*self.hit_color))
+        self.border = Line(rectangle=(*self.pos, *self.size), width=2)
+        self.add(self.border)
+
         self.hit = False
         self.flash_anim = KFAnim((0, *self.hit_color), (.5, *self.white))
 
@@ -235,6 +239,17 @@ class SoundBlockHandler(object):
         self.blocks.add(block)
 
     def on_key_down(self, cid, key):
+        index = lookup(key, 'q2w3er5t6y7ui', range(13))
+        if index is not None:
+            if self.cid == cid:
+                self.gui.ps.select(index)
+        if key == '[':
+            if cid == self.cid:
+                self.gui.ps.left_press()
+        if key == ']':
+            if cid == self.cid:
+                self.gui.ps.right_press()
+
         if self.cid == cid:
             direction = lookup(key, ['right', 'left'], [1, -1])
             if direction is not None:
