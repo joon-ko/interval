@@ -1,3 +1,4 @@
+import math
 import sys, os
 sys.path.insert(0, os.path.abspath('..'))
 
@@ -92,15 +93,23 @@ class TempoCursor(InstructionGroup):
         else:
             return 0
 
+    def round_to_sixteenth(self, tick):
+        kTicksPerSixteenth = kTicksPerQuarter / 4
+        kTicksPerMeasure = kTicksPerQuarter * 4
+        measure = math.floor(tick / kTicksPerMeasure)
+        beat = round(16 * ((tick % kTicksPerMeasure) / kTicksPerMeasure))
+        return measure * kTicksPerMeasure + (beat * kTicksPerSixteenth)
+
     def touch_down(self, tick):
         self._touch_down()
 
-        cur_tick = self.sched.get_tick()
+        cur_tick = self.round_to_sixteenth(self.sched.get_tick())
         p1 = self.touch_points[self.index]
         next_index = (self.index + 1) % len(self.touch_points)
         p2 = self.touch_points[next_index]
         interval = self.calculate_tick_interval(p1, p2)
         next_tick = cur_tick + interval
+
         self.index = next_index
 
         self.sched.post_at_tick(self.touch_down, next_tick)
