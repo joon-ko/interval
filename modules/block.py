@@ -5,7 +5,6 @@ from common.core import lookup
 from common.gfxutil import topleft_label, CEllipse, CRectangle, CLabelRect, AnimGroup, KFAnim
 from common.note import NoteGenerator, Envelope
 from common.synth import Synth
-from common.audio import Audio
 
 from kivy.graphics import Color, Line, Rectangle
 from kivy.graphics.instructions import InstructionGroup
@@ -57,17 +56,15 @@ class SoundBlock(InstructionGroup):
 
         self.hit = False
         self.hit_color = (201/255, 108/255, 130/255)
-        self.flash_anim = KFAnim((0, *self.hit_color), (.25, *self.white))
+        self.flash_anim = KFAnim((0, *self.hit_color), (.5, *self.white))
+
         self.pitch = 60
-        self.clock = Clock()
-        self.tempo_map = SimpleTempoMap(120)
-        self.sched = Scheduler(self.clock, self.tempo_map)
 
         self.time = 0
 
     def flash(self):
-        self.callback(self.pitch, 'sine')
-        self.time = self.sched.get_time()
+        self.callback(self.pitch)
+        self.time = 0
         self.hit = True
 
     def on_update(self, dt):
@@ -88,13 +85,15 @@ class SoundBlockHandler(object):
         self.norm = norm
         self.module_name = 'SoundBlock'
         self.sandbox = sandbox
-        #self.mixer = mixer
-        self.clock = Clock()
-        self.tempo_map = SimpleTempoMap(120)
-        self.audio = Audio(2)
+
+        self.mixer = mixer
+        self.tempo_map = SimpleTempoMap(bpm=60)
+        self.sched = AudioScheduler(self.tempo_map)
         self.synth = Synth("data/FluidR3_GM.sf2")
-        self.sched = Scheduler(self.clock, self.tempo_map)
-        self.audio.set_generator(self.synth)
+        self.sched.set_generator(self.synth)
+        self.mixer.add(self.sched)
+        self.cmd = None
+
         self.client = client
         self.cid = client_id
         self.instruments = {'piano': 1, 'violin': 41, 'trumpet': 57, 'flute': 74, 'clarinet': 72}
@@ -209,8 +208,9 @@ class SoundBlockHandler(object):
     def on_key_down(self, cid, key):
         if self.cid == cid:
             direction = lookup(key, ['right', 'left'], [1, -1])
-            self.switch_instrument(direction)
-            
+            if direction is not None:
+                self.switch_instrument(direction)
+
     def display_controls(self):
         return ('instrument: ' + self.cur_instrument)
 
@@ -222,12 +222,6 @@ class SoundBlockHandler(object):
 
     def on_update(self):
         self.blocks.on_update()
-        self.audio.on_update()
-        self.sched.on_update()
-
-        for block in self.blocks.objects:
-            if self.sched.get_time() > block.time + 1:
-                    self.synth.noteoff(0, block.pitch)
 
     def update_server_state(self, post=False):
         """
@@ -274,12 +268,18 @@ class SoundBlockHandler(object):
         # default values.
         self.update_server_state(post=True)
 
-    def sound(self, pitch, timbre):
+    def sound(self, pitch):
         """
         Play a sound when a PhysicsBubble collides with a collidable object.
         """
+        if self.cmd:
+            self.sched.cancel(self.cmd)
         self.synth.noteon(0, pitch, 100)
+        now = self.sched.get_tick()
+        self.cmd = self.sched.post_at_tick(self._noteoff, now + 240, pitch)
 
+    def _noteoff(self, tick, pitch):
+        self.synth.noteoff(0, pitch)
 
     def calculate_size(self, corner, pos):
         x = abs(pos[0]-corner[0])
