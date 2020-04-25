@@ -1,4 +1,4 @@
-import math
+import copy, math
 import sys, os
 sys.path.insert(0, os.path.abspath('..'))
 
@@ -30,7 +30,7 @@ class TempoCursor(InstructionGroup):
     """
     name = 'TempoCursor'
 
-    def __init__(self, norm, pos, tempo, clock, tempo_map, block_handler):
+    def __init__(self, norm, pos, tempo, clock, tempo_map, touch_points, block_handler):
         super(TempoCursor, self).__init__()
         self.norm = norm
         self.pos = pos
@@ -47,7 +47,7 @@ class TempoCursor(InstructionGroup):
         self.block_handler = block_handler
 
         # 0..15, for 16th note granularity
-        self.touch_points = [0, 1, 3, 5, 7, 8, 9, 11, 13, 15] # syncopated rhythm!
+        self.touch_points = touch_points
         self.index = 0
 
         # add touch markers
@@ -143,11 +143,15 @@ class TempoCursorHandler(object):
         self.gui = CursorGUI(norm, pos=self.norm.nt((20, 300)))
 
     def on_touch_down(self, cid, pos):
+        if cid == self.cid:
+            self.gui.on_touch_down(pos)
+
         if not self.sandbox.in_bounds(pos):
             return
 
         cursor = TempoCursor(
-            self.norm, pos, self.tempo, self.clock, self.tempo_map, self.block_handler
+            self.norm, pos, self.tempo, self.clock, self.tempo_map,
+            copy.deepcopy(self.gui.bs.touch_points), self.block_handler
         )
         self.cursors.add(cursor)
 
