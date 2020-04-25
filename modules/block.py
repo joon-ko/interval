@@ -36,7 +36,7 @@ class SoundBlock(InstructionGroup):
     """
     name = 'SoundBlock'
 
-    def __init__(self, norm, sandbox, pos, size, channel, handler, callback=None):
+    def __init__(self, norm, sandbox, pos, size, channel, pitch, color, handler, callback=None):
         super(SoundBlock, self).__init__()
         self.norm = norm
         self.sandbox = sandbox
@@ -54,12 +54,12 @@ class SoundBlock(InstructionGroup):
         self.add(self.color)
         self.add(self.rect)
 
-        self.hit = False
-        self.hit_color = (201/255, 108/255, 130/255)
-        self.flash_anim = KFAnim((0, *self.hit_color), (.5, *self.white))
-
-        self.pitch = 60
         self.channel = channel
+        self.pitch = pitch
+        self.hit_color = color
+
+        self.hit = False
+        self.flash_anim = KFAnim((0, *self.hit_color), (.5, *self.white))
 
         self.time = 0
 
@@ -145,9 +145,16 @@ class SoundBlockHandler(object):
         self.blocks = AnimGroup()
         self.sandbox.add(self.blocks)
 
-        self.gui = BlockGUI(self.norm, pos=self.norm.nt((20, 300))) # placeholder
+        self.gui = BlockGUI(
+            self.norm,
+            pos=self.norm.nt((50, 100)),
+            pitch_callback=self.update_pitch
+        )
 
     def on_touch_down(self, cid, pos):
+        if cid == self.cid:
+            self.gui.on_touch_down(pos)
+
         if not self.sandbox.in_bounds(pos):
             return
 
@@ -217,8 +224,13 @@ class SoundBlockHandler(object):
             return
 
         self.sandbox.remove(self.hold_shape[cid])
+
+        pitch = self.pitch[cid]
+        color = self.color[cid]
+
         block = SoundBlock(
-            self.norm, self.sandbox, bottom_left, size, self.channel, self, self.sound
+            self.norm, self.sandbox, bottom_left, size, self.channel,
+            pitch, color, self, self.sound
         )
         self.blocks.add(block)
 
@@ -233,6 +245,7 @@ class SoundBlockHandler(object):
 
     def on_update(self):
         self.blocks.on_update()
+        self.gui.on_update(Window.mouse_pos)
 
     def update_server_state(self, post=False):
         """
@@ -289,6 +302,13 @@ class SoundBlockHandler(object):
         self.synth.noteon(channel, pitch, 100)
         now = self.sched.get_tick()
         self.cmd[channel] = self.sched.post_at_tick(self._noteoff, now + 240, (channel, pitch))
+
+    def update_pitch(self, color, pitch):
+        """Update this client's color and pitch due to PitchSelect."""
+
+        self.color[self.cid] = self.color_dict[color]
+        self.pitch[self.cid] = pitch
+        self.update_server_state(post=True)
 
     def _noteoff(self, tick, args):
         channel, pitch = args

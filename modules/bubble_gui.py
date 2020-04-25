@@ -5,7 +5,6 @@ from common.gfxutil import CLabelRect, CRectangle
 from kivy.graphics import Color, Line, Rectangle
 from kivy.graphics.instructions import InstructionGroup
 from kivy.core.image import Image
-from kivy.core.window import Window
 
 def midi_pitch_to_note_name(pitch):
     """
@@ -67,15 +66,15 @@ class BubbleGUI(InstructionGroup):
         self.add(self.border_color)
         self.add(self.border)
 
-        ps_pos = self.norm.nt((self.pos[0]+20, self.pos[1]+20))
-        bs_pos = self.norm.nt((self.pos[0]+20, self.pos[1]+300))
-        gs_pos = self.norm.nt((self.pos[0]+20, self.pos[1]+450))
-        ts_pos = self.norm.nt((self.pos[0]+20, self.pos[1]+560))
+        ps_pos = (self.pos[0]+self.norm.nv(20), self.pos[1]+self.norm.nv(20))
+        bs_pos = (self.pos[0]+self.norm.nv(20), self.pos[1]+self.norm.nv(300))
+        gs_pos = (self.pos[0]+self.norm.nv(20), self.pos[1]+self.norm.nv(450))
+        ts_pos = (self.pos[0]+self.norm.nv(20), self.pos[1]+self.norm.nv(560))
 
-        self.ps = PitchSelect(norm, pos=ps_pos, callback=pitch_callback)
-        self.bs = BounceSelect(norm, pos=bs_pos, callback=bounce_callback)
-        self.gs = GravitySelect(norm, pos=gs_pos, callback=gravity_callback)
-        self.ts = TimbreSelect(norm, pos=ts_pos, callback=timbre_callback)
+        self.ps = PitchSelect(norm, ps_pos, pitch_callback)
+        self.bs = BounceSelect(norm, bs_pos, bounce_callback)
+        self.gs = GravitySelect(norm, gs_pos, gravity_callback)
+        self.ts = TimbreSelect(norm, ts_pos, timbre_callback)
 
         self.add(self.ps)
         self.add(self.bs)
