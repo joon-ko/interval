@@ -45,7 +45,7 @@ def in_bounds(mouse_pos, obj_pos, obj_size):
            (mouse_pos[1] <= obj_pos[1] + obj_size[1])
 
 class BlockGUI(InstructionGroup):
-    def __init__(self, norm, pos, pitch_callback):
+    def __init__(self, norm, pos, pitch_callback, instrument_callback):
         super(BlockGUI, self).__init__()
 
         self.norm = norm
@@ -56,16 +56,123 @@ class BlockGUI(InstructionGroup):
         self.add(Line(rectangle=(*self.pos, *self.size), width=2))
 
         ps_pos = (self.pos[0]+self.norm.nv(20), self.pos[1]+self.norm.nv(20))
+        is_pos = (self.pos[0]+self.norm.nv(20), self.pos[1]+self.norm.nv(560))
         self.ps = PitchSelect(norm, ps_pos, pitch_callback)
+        self.ints = InstrumentSelect(norm, is_pos, instrument_callback)
         self.add(self.ps)
+        self.add(self.ints)
 
     def on_touch_down(self, pos):
-        for submodule in [self.ps]:
+        for submodule in [self.ps, self.ints]:
             if in_bounds(pos, submodule.pos, submodule.size):
                 submodule.on_touch_down(pos)
 
     def on_update(self, pos):
         self.ps.on_update(pos)
+
+class InstrumentSelect(InstructionGroup):
+    """
+    Submodule to select the instrument of SoundBlock.
+    """
+    def __init__(self, norm, pos, callback):
+        super(InstrumentSelect, self).__init__()
+        self.norm = norm
+        self.selected = 'piano'
+
+        self.callback = callback
+        self.pos = pos
+        self.margin = self.norm.nv(20)
+        self.button_length = self.norm.nv(64)
+        self.title_height = self.norm.nv(50) # height of the word 'instrument'
+
+        self.size = (
+            (5 * self.button_length) + (5 * self.margin),
+            self.button_length + (2 * self.margin) + self.title_height
+        )
+
+        self.white = (239/255, 226/255, 222/255)
+        self.red = (201/255, 108/255, 130/255)
+
+        self.border_color = Color(147/255, 127/255, 159/255) # purple
+        self.border = Line(rectangle=(*self.pos, *self.size), width=2)
+        self.add(self.border_color)
+        self.add(self.border)
+
+        button_size = (self.button_length, self.button_length)
+        self.instruments = {
+            'piano': Rectangle(size=button_size, texture=Image('images/piano.png').texture),
+            'violin': Rectangle(size=button_size, texture=Image('images/violin.png').texture),
+            'trumpet': Rectangle(size=button_size, texture=Image('images/trumpet.png').texture),
+            'ocarina': Rectangle(size=button_size, texture=Image('images/ocarina.png').texture),
+            'choir': Rectangle(size=button_size, texture=Image('images/choir.png').texture)
+        }
+        self.instrument_bgs = {
+            'piano': Rectangle(size=button_size),
+            'violin': Rectangle(size=button_size),
+            'trumpet': Rectangle(size=button_size),
+            'ocarina': Rectangle(size=button_size),
+            'choir': Rectangle(size=button_size)
+        }
+        self.instrument_colors = {
+            'piano': Color(*self.red), # default selected timbre
+            'violin': Color(*self.white),
+            'trumpet': Color(*self.white),
+            'ocarina': Color(*self.white),
+            'choir': Color(*self.white)
+        }
+
+        x, y = self.pos
+
+        piano_pos = (x + self.margin, y + self.margin)
+        violin_pos = (x + 2*self.margin + self.button_length, y + self.margin)
+        trumpet_pos = (x + 3*self.margin + 2*self.button_length, y + self.margin)
+        ocarina_pos = (x + 4*self.margin + 3*self.button_length, y + self.margin)
+        choir_pos = (x + 5*self.margin + 4*self.button_length, y + self.margin)
+
+        for instrument, instrument_pos in zip(
+            ('piano', 'violin', 'trumpet', 'ocarina', 'choir'),
+            (piano_pos, violin_pos, trumpet_pos, ocarina_pos, choir_pos)
+        ):
+            self.instruments[instrument].pos = self.instrument_bgs[instrument].pos = instrument_pos
+            self.add(self.instrument_colors[instrument])
+            self.add(self.instrument_bgs[instrument])
+            self.add(self.instruments[instrument])
+
+        title_pos = (x + self.size[0]/2, y + self.size[1] - self.title_height/2 - self.margin/2)
+        self.title = CLabelRect(cpos=title_pos, text='instrument', font_size='18')
+        self.add(Color(*self.white))
+        self.add(self.title)
+
+    def on_touch_down(self, pos):
+        button_size = (self.button_length, self.button_length)
+
+        if in_bounds(pos, self.instruments['piano'].pos, button_size):
+            self.select('piano')
+            self.callback(self.selected)
+
+        if in_bounds(pos, self.instruments['violin'].pos, button_size):
+            self.select('violin')
+            self.callback(self.selected)
+
+        if in_bounds(pos, self.instruments['trumpet'].pos, button_size):
+            self.select('trumpet')
+            self.callback(self.selected)
+
+        if in_bounds(pos, self.instruments['ocarina'].pos, button_size):
+            self.select('ocarina')
+            self.callback(self.selected)
+
+        if in_bounds(pos, self.instruments['choir'].pos, button_size):
+            self.select('choir')
+            self.callback(self.selected)
+
+    def select(self, instrument):
+        self.instrument_colors[instrument].rgb = self.red
+        self.selected = instrument
+        others = [c for c in ['piano', 'violin', 'trumpet', 'ocarina', 'choir'] if c != instrument]
+        for o in others:
+            self.instrument_colors[o].rgb = self.white
+
 
 class PitchSelect(InstructionGroup):
     """

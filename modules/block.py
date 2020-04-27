@@ -15,7 +15,7 @@ from common.clock import Clock, SimpleTempoMap, Scheduler, AudioScheduler, tick_
 
 import numpy as np
 
-from modules.block_gui import BlockGUI
+from modules.block_gui import BlockGUI, InstrumentSelect
 
 def in_bounds(mouse_pos, obj_pos, obj_size):
     """
@@ -101,8 +101,8 @@ class SoundBlockHandler(object):
 
         self.client = client
         self.cid = client_id
-        self.instruments = {'piano': 1, 'violin': 41, 'trumpet': 57, 'flute': 74, 'clarinet': 72}
-        self.inst_list = ['piano', 'violin', 'trumpet', 'flute', 'clarinet']
+        self.instruments = {'piano': 1, 'violin': 41, 'trumpet': 57, 'ocarina': 80, 'choir': 53}
+        self.inst_list = ['piano', 'violin', 'trumpet', 'ocarina', 'choir']
         self.channel = 0
 
         # set up the correct sound (program: bank and preset)
@@ -139,10 +139,12 @@ class SoundBlockHandler(object):
         self.default_color = self.color_dict['violet']
         self.default_pitch = self.pitch_list[0]
         self.default_timbre = 'sine'
+        self.default_instrument = 'piano'
 
         self.color = {}
         self.pitch = {}
         self.timbre = {}
+        self.instrument = {}
 
         self.display = False
 
@@ -152,7 +154,8 @@ class SoundBlockHandler(object):
         self.gui = BlockGUI(
             self.norm,
             pos=self.norm.nt((50, 100)),
-            pitch_callback=self.update_pitch
+            pitch_callback=self.update_pitch,
+            instrument_callback=self.update_instrument
         )
 
     def on_touch_down(self, cid, pos):
@@ -173,7 +176,6 @@ class SoundBlockHandler(object):
         self.hold_shape[cid] = Rectangle(pos = pos, size = (0,0))
 
         if self.draw_skip.get(cid):
-            print('boo')
             self.draw_skip[cid] = False
             return
 
@@ -231,6 +233,8 @@ class SoundBlockHandler(object):
 
         pitch = self.pitch[cid]
         color = self.color[cid]
+        instrument = self.instrument[cid]
+        self.channel = self.inst_list.index(instrument)
 
         block = SoundBlock(
             self.norm, self.sandbox, bottom_left, size, self.channel,
@@ -250,10 +254,19 @@ class SoundBlockHandler(object):
             if cid == self.cid:
                 self.gui.ps.right_press()
 
+        instrument = lookup(key, 'asdfg', ['piano', 'violin', 'trumpet', 'ocarina', 'choir'])
+        if instrument is not None:
+            self.instrument[cid] = instrument
+            if self.cid == cid:
+                self.channel = self.inst_list.index(instrument)
+                self.gui.ints.select(instrument) # have the GUI update as well
+
+        """
         if self.cid == cid:
             direction = lookup(key, ['right', 'left'], [1, -1])
             if direction is not None:
                 self.channel = (self.channel + direction) % len(self.inst_list)
+        """
 
     def display_controls(self):
         return ('instrument: ' + self.inst_list[self.channel])
@@ -269,7 +282,8 @@ class SoundBlockHandler(object):
         state = {
             'color': self.color,
             'pitch': self.pitch,
-            'timbre': self.timbre
+            'timbre': self.timbre,
+            'instrument': self.instrument
         }
         data = {'module': self.module_name, 'cid': self.cid, 'state': state, 'post': post}
         self.client.emit('update_state', data)
@@ -282,6 +296,7 @@ class SoundBlockHandler(object):
             self.color = state['color']
             self.pitch = state['pitch']
             self.timbre = state['timbre']
+            self.instrument = state['instrument']
 
     def sync_state(self, state):
         """
@@ -292,11 +307,13 @@ class SoundBlockHandler(object):
         self.color = state['color']
         self.pitch = state['pitch']
         self.timbre = state['timbre']
+        self.instrument = state['instrument']
 
         # after initial sync, add default values for this client
         self.color[self.cid] = self.default_color
         self.pitch[self.cid] = self.default_pitch
         self.timbre[self.cid] = self.default_timbre
+        self.instrument[self.cid] = self.default_instrument
         self.skip[self.cid] = False
         self.draw_skip[self.cid] = False
 
@@ -323,6 +340,13 @@ class SoundBlockHandler(object):
 
         self.color[self.cid] = self.color_dict[color]
         self.pitch[self.cid] = pitch
+        self.update_server_state(post=True)
+
+    def update_instrument(self, instrument):
+        """Update this client's instrument due to InstrumentSelect."""
+
+        self.instrument[self.cid] = instrument
+        self.channel = self.inst_list.index(instrument)
         self.update_server_state(post=True)
 
     def _noteoff(self, tick, args):
