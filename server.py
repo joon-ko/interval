@@ -87,7 +87,8 @@ PhysicsBubbleState = {
 SoundBlockState = {
     'color': {},
     'pitch': {},
-    'timbre': {}
+    'timbre': {},
+    'instrument': {}
 }
 
 state_dict = {
