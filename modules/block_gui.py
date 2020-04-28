@@ -56,7 +56,7 @@ class BlockGUI(InstructionGroup):
         self.add(Line(rectangle=(*self.pos, *self.size), width=2))
 
         ps_pos = (self.pos[0]+self.norm.nv(20), self.pos[1]+self.norm.nv(20))
-        is_pos = (self.pos[0]+self.norm.nv(20), self.pos[1]+self.norm.nv(560))
+        is_pos = (self.pos[0]+self.norm.nv(30), self.pos[1]+self.norm.nv(300))
         self.ps = PitchSelect(norm, ps_pos, pitch_callback)
         self.ints = InstrumentSelect(norm, is_pos, instrument_callback)
         self.add(self.ps)
@@ -86,7 +86,7 @@ class InstrumentSelect(InstructionGroup):
         self.title_height = self.norm.nv(50) # height of the word 'instrument'
 
         self.size = (
-            (5 * self.button_length) + (5 * self.margin),
+            (5 * self.button_length) + (6 * self.margin),
             self.button_length + (2 * self.margin) + self.title_height
         )
 

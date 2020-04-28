@@ -211,7 +211,7 @@ class SoundBlockHandler(object):
         self.hold_shape[cid].size = size
 
     def on_touch_up(self, cid, pos):
-        if self.skip[cid]:
+        if self.skip.get(cid):
             self.skip[cid] = False
             return
 
@@ -260,13 +260,6 @@ class SoundBlockHandler(object):
             if self.cid == cid:
                 self.channel = self.inst_list.index(instrument)
                 self.gui.ints.select(instrument) # have the GUI update as well
-
-        """
-        if self.cid == cid:
-            direction = lookup(key, ['right', 'left'], [1, -1])
-            if direction is not None:
-                self.channel = (self.channel + direction) % len(self.inst_list)
-        """
 
     def display_controls(self):
         return ('instrument: ' + self.inst_list[self.channel])
