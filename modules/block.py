@@ -94,13 +94,9 @@ class SoundBlockHandler(object):
         self.mixer = mixer
         self.tempo_map = SimpleTempoMap(bpm=60)
         self.sched = AudioScheduler(self.tempo_map)
-        self.drum_sched = AudioScheduler(self.tempo_map)
         self.synth = Synth("data/FluidR3_GM.sf2")
-        self.drum_synth = Synth("data/FluidR3_GM.sf2")
         self.sched.set_generator(self.synth)
-        self.drum_sched.set_generator(self.drum_synth)
         self.mixer.add(self.sched)
-        self.mixer.add(self.drum_sched)
         self.cmd = {}
 
         self.client = client
@@ -118,7 +114,7 @@ class SoundBlockHandler(object):
             self.synth.program(index, 0, self.instruments[inst])
 
         for index, drum in enumerate(self.drum_list):
-            self.drum_synth.program(index+len(self.instruments), 0, 10)
+            self.synth.program(index+len(self.instruments), 0, 10)
 
         # many variables here are dicts because a user's module handler needs to keep track of
         # not just its own variables, but other users' variables as well! so we use dictionaries
@@ -255,7 +251,7 @@ class SoundBlockHandler(object):
         if self.gui.is_drum:
             block = SoundBlock(
                 self.norm, self.sandbox, bottom_left, size, self.drum_channel,
-                drum, color, self, self.sound
+                self.drumkit[drum], color, self, self.sound
             )
         else:
             block = SoundBlock(
@@ -383,14 +379,12 @@ class SoundBlockHandler(object):
 
     def update_instrument(self, instrument):
         """Update this client's instrument due to InstrumentSelect."""
-
         self.instrument[self.cid] = instrument
         self.channel = self.inst_list.index(instrument)
         self.update_server_state(post=True)
 
     def update_drum(self, drum):
         self.drum[self.cid] = drum
-        print("SELF.DRUM", self.drum)
         self.drum_channel = self.drum_list.index(drum)+len(self.inst_list)
         self.update_server_state(post=True)
 
