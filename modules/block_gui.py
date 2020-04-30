@@ -45,30 +45,169 @@ def in_bounds(mouse_pos, obj_pos, obj_size):
            (mouse_pos[1] <= obj_pos[1] + obj_size[1])
 
 class BlockGUI(InstructionGroup):
-    def __init__(self, norm, pos, pitch_callback, instrument_callback):
+    def __init__(self, norm, pos, is_drum, pitch_callback, instrument_callback, drum_callback):
         super(BlockGUI, self).__init__()
 
         self.norm = norm
         self.pos = pos
+        self.is_drum = is_drum
         self.size = self.norm.nt((495, 495))
-
-        self.add(Color(1, 1, 1))
-        self.add(Line(rectangle=(*self.pos, *self.size), width=2))
+        self.ds_size = self.norm.nt((495, 200))
 
         ps_pos = (self.pos[0]+self.norm.nv(20), self.pos[1]+self.norm.nv(20))
         is_pos = (self.pos[0]+self.norm.nv(30), self.pos[1]+self.norm.nv(300))
+        ds_pos = (self.pos[0]+self.norm.nv(20), self.pos[1]+self.norm.nv(600))
         self.ps = PitchSelect(norm, ps_pos, pitch_callback)
         self.ints = InstrumentSelect(norm, is_pos, instrument_callback)
+        self.ds = DrumSelect(norm, ds_pos, drum_callback)
+
+        self.highlight_color = Color(1,1,1)
+
+        if not is_drum:
+            self.highlight = Line(rectangle=(*self.pos, *self.size), width=2)
+            self.highlight_pos = self.pos
+        else:
+            self.highlight = Line(rectangle=(*self.ds.pos, *self.size), width=2)
+            self.highlight_pos = self.ds.pos
+
+        self.add(self.highlight_color)
+        self.add(self.highlight)
         self.add(self.ps)
         self.add(self.ints)
+        self.add(self.ds)
 
     def on_touch_down(self, pos):
-        for submodule in [self.ps, self.ints]:
+        if self.is_drum and (in_bounds(pos, self.ps.pos, self.ps.size) or in_bounds(pos, self.ints.pos, self.ints.size)):
+            return
+        elif not self.is_drum and in_bounds(pos, self.ds.pos, self.ds.size):
+            return
+        for submodule in [self.ps, self.ints, self.ds]:
             if in_bounds(pos, submodule.pos, submodule.size):
                 submodule.on_touch_down(pos)
 
+    def switch_module(self):
+        self.is_drum = not self.is_drum
+        if not self.is_drum:
+            self.remove(self.highlight)
+            self.highlight_pos = self.pos
+            self.highlight = Line(rectangle=(*self.highlight_pos, *self.size), width=2)
+            self.add(self.highlight)
+            
+        else:
+            self.remove(self.highlight)
+            self.highlight_pos = (self.ds.pos[0]-self.norm.nv(24), self.ds.pos[1]-self.norm.nv(18))
+            self.highlight = Line(rectangle=(*self.highlight_pos, *self.ds_size), width=2)
+            self.add(self.highlight)
+            self.highlight_pos = self.ds.pos
+
     def on_update(self, pos):
         self.ps.on_update(pos)
+
+
+class DrumSelect(InstructionGroup):
+    """
+    Submodule to toggle drum kit for SoundBlock.
+    """
+    def __init__(self, norm, pos, callback):
+        super(DrumSelect, self).__init__()
+        self.norm = norm
+        self.selected = 'snare'
+
+        self.callback = callback
+        self.pos = pos
+        self.margin = self.norm.nv(20)
+        self.button_length = self.norm.nv(64)
+        self.title_height = self.norm.nv(50) # height of the word 'drumset'
+
+        self.size = (
+                (5 * self.button_length) + (6 * self.margin),
+                self.button_length + (2 * self.margin) + self.title_height
+            )
+
+        self.white = (239/255, 226/255, 222/255)
+        self.red = (201/255, 108/255, 130/255)
+
+        self.border_color = Color(214/255, 152/255, 142/255) #orange
+        self.border = Line(rectangle=(*self.pos, *self.size), width=2)
+        self.add(self.border_color)
+        self.add(self.border)
+
+        button_size = (self.button_length, self.button_length)
+        self.instruments = {
+            'snare': Rectangle(size=button_size, texture=Image('images/snare.png').texture),
+            'crash': Rectangle(size=button_size, texture=Image('images/crash.png').texture),
+            'bass': Rectangle(size=button_size, texture=Image('images/bass.png').texture),
+            'hihat': Rectangle(size=button_size, texture=Image('images/hihat.png').texture),
+            'triangle': Rectangle(size=button_size, texture=Image('images/triangle_instr.png').texture)
+        }
+        self.instrument_bgs = {
+            'snare': Rectangle(size=button_size),
+            'crash': Rectangle(size=button_size),
+            'bass': Rectangle(size=button_size),
+            'hihat': Rectangle(size=button_size),
+            'triangle': Rectangle(size=button_size)
+        }
+        self.instrument_colors = {
+            'snare': Color(*self.red), # default selected timbre
+            'crash': Color(*self.white),
+            'bass': Color(*self.white),
+            'hihat': Color(*self.white),
+            'triangle': Color(*self.white)
+        }
+
+        x, y = self.pos
+
+        snare_pos = (x + self.margin, y + self.margin)
+        crash_pos = (x + 2*self.margin + self.button_length, y + self.margin)
+        bass_pos = (x + 3*self.margin + 2*self.button_length, y + self.margin)
+        hihat_pos = (x + 4*self.margin + 3*self.button_length, y + self.margin)
+        triangle_pos = (x + 5*self.margin + 4*self.button_length, y + self.margin)
+
+        for instrument, instrument_pos in zip(
+            ('snare', 'crash', 'bass', 'hihat', 'triangle'),
+            (snare_pos, crash_pos, bass_pos, hihat_pos, triangle_pos)
+        ):
+            self.instruments[instrument].pos = self.instrument_bgs[instrument].pos = instrument_pos
+            self.add(self.instrument_colors[instrument])
+            self.add(self.instrument_bgs[instrument])
+            self.add(self.instruments[instrument])
+
+        title_pos = (x + self.size[0]/2, y + self.size[1] - self.title_height/2 - self.margin/2)
+        self.title = CLabelRect(cpos=title_pos, text='drumkit', font_size='18')
+        self.add(Color(*self.white))
+        self.add(self.title)
+
+    def on_touch_down(self, pos):
+        button_size = (self.button_length, self.button_length)
+
+        if in_bounds(pos, self.instruments['snare'].pos, button_size):
+            self.select('snare')
+            self.callback(self.selected)
+
+        if in_bounds(pos, self.instruments['crash'].pos, button_size):
+            self.select('crash')
+            self.callback(self.selected)
+
+        if in_bounds(pos, self.instruments['bass'].pos, button_size):
+            self.select('bass')
+            self.callback(self.selected)
+
+        if in_bounds(pos, self.instruments['hihat'].pos, button_size):
+            self.select('hihat')
+            self.callback(self.selected)
+
+        if in_bounds(pos, self.instruments['triangle'].pos, button_size):
+            self.select('triangle')
+            self.callback(self.selected)
+
+    def select(self, instrument):
+        self.instrument_colors[instrument].rgb = self.red
+        self.selected = instrument
+        others = [c for c in ['snare', 'crash', 'bass', 'hihat', 'triangle'] if c != instrument]
+        for o in others:
+            self.instrument_colors[o].rgb = self.white
+
+
 
 class InstrumentSelect(InstructionGroup):
     """

@@ -94,21 +94,31 @@ class SoundBlockHandler(object):
         self.mixer = mixer
         self.tempo_map = SimpleTempoMap(bpm=60)
         self.sched = AudioScheduler(self.tempo_map)
+        self.drum_sched = AudioScheduler(self.tempo_map)
         self.synth = Synth("data/FluidR3_GM.sf2")
+        self.drum_synth = Synth("data/FluidR3_GM.sf2")
         self.sched.set_generator(self.synth)
+        self.drum_sched.set_generator(self.drum_synth)
         self.mixer.add(self.sched)
+        self.mixer.add(self.drum_sched)
         self.cmd = {}
 
         self.client = client
         self.cid = client_id
         self.instruments = {'piano': 1, 'violin': 41, 'trumpet': 57, 'ocarina': 80, 'choir': 53}
         self.inst_list = ['piano', 'violin', 'trumpet', 'ocarina', 'choir']
+        self.drumkit = {'snare': 38, 'crash': 49, 'bass': 35, 'hihat': 46, 'triangle': 81}
+        self.drum_list = ['snare', 'crash', 'bass', 'hihat', 'triangle']
         self.channel = 0
+        self.drum_channel = len(self.inst_list)
 
         # set up the correct sound (program: bank and preset)
         # each instrument is on a different channel
         for index, inst in enumerate(self.inst_list):
             self.synth.program(index, 0, self.instruments[inst])
+
+        for index, drum in enumerate(self.drum_list):
+            self.drum_synth.program(index+len(self.instruments), 0, 10)
 
         # many variables here are dicts because a user's module handler needs to keep track of
         # not just its own variables, but other users' variables as well! so we use dictionaries
@@ -140,11 +150,13 @@ class SoundBlockHandler(object):
         self.default_pitch = self.pitch_list[0]
         self.default_timbre = 'sine'
         self.default_instrument = 'piano'
+        self.default_drum = 'snare'
 
         self.color = {}
         self.pitch = {}
         self.timbre = {}
         self.instrument = {}
+        self.drum = {}
 
         self.display = False
 
@@ -154,8 +166,10 @@ class SoundBlockHandler(object):
         self.gui = BlockGUI(
             self.norm,
             pos=self.norm.nt((50, 100)),
+            is_drum = False,
             pitch_callback=self.update_pitch,
-            instrument_callback=self.update_instrument
+            instrument_callback=self.update_instrument,
+            drum_callback = self.update_drum
         )
 
     def on_touch_down(self, cid, pos):
@@ -235,11 +249,19 @@ class SoundBlockHandler(object):
         color = self.color[cid]
         instrument = self.instrument[cid]
         self.channel = self.inst_list.index(instrument)
+        drum = self.drum[cid]
+        self.drum_channel = self.drum_list.index(drum) + len(self.inst_list)
 
-        block = SoundBlock(
-            self.norm, self.sandbox, bottom_left, size, self.channel,
-            pitch, color, self, self.sound
-        )
+        if self.gui.is_drum:
+            block = SoundBlock(
+                self.norm, self.sandbox, bottom_left, size, self.drum_channel,
+                drum, color, self, self.sound
+            )
+        else:
+            block = SoundBlock(
+                self.norm, self.sandbox, bottom_left, size, self.channel,
+                pitch, color, self, self.sound
+            )
         self.blocks.add(block)
 
     def on_key_down(self, cid, key):
@@ -254,15 +276,34 @@ class SoundBlockHandler(object):
             if cid == self.cid:
                 self.gui.ps.right_press()
 
-        instrument = lookup(key, 'asdfg', ['piano', 'violin', 'trumpet', 'ocarina', 'choir'])
-        if instrument is not None:
-            self.instrument[cid] = instrument
-            if self.cid == cid:
-                self.channel = self.inst_list.index(instrument)
-                self.gui.ints.select(instrument) # have the GUI update as well
+        if key == 'up':
+            if not self.gui.is_drum:
+                self.gui.switch_module()
+
+        if key == 'down':
+            if self.gui.is_drum:
+                self.gui.switch_module()
+
+        if self.gui.is_drum:
+            drum = lookup(key, 'asdfg', ['snare', 'crash', 'bass', 'hihat', 'triangle'])
+            if drum is not None:
+                self.drum[cid] = drum
+                if self.cid == cid:
+                    self.drum_channel = self.drum_list.index(drum) + len(self.inst_list)
+                    self.gui.ds.select(drum)
+        else:
+            instrument = lookup(key, 'asdfg', ['piano', 'violin', 'trumpet', 'ocarina', 'choir'])
+            if instrument is not None:
+                self.instrument[cid] = instrument
+                if self.cid == cid:
+                    self.channel = self.inst_list.index(instrument)
+                    self.gui.ints.select(instrument) # have the GUI update as well
 
     def display_controls(self):
-        return ('instrument: ' + self.inst_list[self.channel])
+        if self.gui.is_drum:
+            return ('drum: ' + self.drum_list[self.drum_channel-len(self.inst_list)])
+        else:
+            return ('instrument: ' + self.inst_list[self.channel])
 
     def on_update(self):
         self.blocks.on_update()
@@ -276,7 +317,8 @@ class SoundBlockHandler(object):
             'color': self.color,
             'pitch': self.pitch,
             'timbre': self.timbre,
-            'instrument': self.instrument
+            'instrument': self.instrument,
+            'drum': self.drum
         }
         data = {'module': self.module_name, 'cid': self.cid, 'state': state, 'post': post}
         self.client.emit('update_state', data)
@@ -290,6 +332,7 @@ class SoundBlockHandler(object):
             self.pitch = state['pitch']
             self.timbre = state['timbre']
             self.instrument = state['instrument']
+            self.drum = state['drum']
 
     def sync_state(self, state):
         """
@@ -301,12 +344,15 @@ class SoundBlockHandler(object):
         self.pitch = state['pitch']
         self.timbre = state['timbre']
         self.instrument = state['instrument']
+        self.drum = state['drum']
 
         # after initial sync, add default values for this client
         self.color[self.cid] = self.default_color
         self.pitch[self.cid] = self.default_pitch
         self.timbre[self.cid] = self.default_timbre
         self.instrument[self.cid] = self.default_instrument
+        self.drum[self.cid] = self.default_drum
+
         self.skip[self.cid] = False
         self.draw_skip[self.cid] = False
 
@@ -340,6 +386,12 @@ class SoundBlockHandler(object):
 
         self.instrument[self.cid] = instrument
         self.channel = self.inst_list.index(instrument)
+        self.update_server_state(post=True)
+
+    def update_drum(self, drum):
+        self.drum[self.cid] = drum
+        print("SELF.DRUM", self.drum)
+        self.drum_channel = self.drum_list.index(drum)+len(self.inst_list)
         self.update_server_state(post=True)
 
     def _noteoff(self, tick, args):

@@ -88,7 +88,8 @@ SoundBlockState = {
     'color': {},
     'pitch': {},
     'timbre': {},
-    'instrument': {}
+    'instrument': {},
+    'drum': {}
 }
 
 state_dict = {
