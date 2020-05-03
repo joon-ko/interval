@@ -248,7 +248,7 @@ class SoundBlockHandler(object):
         size = self.hold_shape[cid].size
 
         if size[0] <= 10 or size[1] <= 10:
-            self.sandbox.removec(self.hold_shape[cid])
+            self.sandbox.remove(self.hold_shape[cid])
             return
 
         self.sandbox.remove(self.hold_shape[cid])
