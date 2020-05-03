@@ -89,7 +89,7 @@ SoundBlockState = {
     'pitch': {},
     'timbre': {},
     'instrument': {},
-    'drum': {}
+    'drum': {},
     'delete_mode': {}
 }
 TempoCursorState = {
