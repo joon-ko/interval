@@ -26,8 +26,6 @@
 
 we are currently working on more sound modules -- namely, at least one more static module that works with simultaneous or arpeggiated chords, and one module that can play more melodic note sequences, in contrast to SoundBlocks which can only play one instrument and pitch. we're also working to extend SoundBlock to have percussion/drum sounds.
 
-we also are currently working on being able to delete sound modules once you've deployed them -- currently, to refresh your screen, you need to restart the app, which is a bit annoying. :(
-
 ### on collaborative playtesting
 
 **interval** was designed to be both a single-player and multiplayer experience -- we encourage playtesting with multiple people! under the hood, when you run `python client.py`, you connect to a server currently hosted on heroku, and the server is responsible for managing all the different clients that connect to it.
@@ -50,3 +48,4 @@ currently, the **PhysicsBubble** and **SoundBlock** modules work relatively well
   - **qwertyui**: pitch select (white keys)
   - **23567**: pitch select (black keys)
   - **asdfg**: instrument select
+  - **d**: toggle delete mode (click block to delete)

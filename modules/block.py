@@ -168,6 +168,8 @@ class SoundBlockHandler(object):
             drum_callback = self.update_drum
         )
 
+        self.delete_mode = False
+
     def on_touch_down(self, cid, pos):
         if cid == self.cid:
             self.gui.on_touch_down(pos)
@@ -178,6 +180,11 @@ class SoundBlockHandler(object):
         # when a block is clicked, flash and play a sound
         for block in self.blocks.objects:
             if in_bounds(pos, block.pos, block.size):
+                if self.delete_mode:
+                    self.blocks.objects.remove(block)
+                    self.blocks.remove(block)
+                    break
+
                 block.flash()
                 self.skip[cid] = True
                 return # don't start drawing a SoundBlock
@@ -272,6 +279,9 @@ class SoundBlockHandler(object):
             if cid == self.cid:
                 self.gui.ps.right_press()
 
+        if key == 'v':
+            self.delete_mode = not self.delete_mode
+
         if key == 'up':
             if not self.gui.is_drum:
                 self.gui.switch_module()
@@ -296,10 +306,12 @@ class SoundBlockHandler(object):
                     self.gui.ints.select(instrument) # have the GUI update as well
 
     def display_controls(self):
+        info = 'delete mode: {}\n'.format(self.delete_mode)
         if self.gui.is_drum:
-            return ('drum: ' + self.drum_list[self.drum_channel-len(self.inst_list)])
+            info += 'drum: {}\n'.format(self.drum_list[self.drum_channel-len(self.inst_list)])
         else:
-            return ('instrument: ' + self.inst_list[self.channel])
+            info += 'instrument: {}\n'.format(self.inst_list[self.channel])
+        return info
 
     def on_update(self):
         self.blocks.on_update()
