@@ -298,6 +298,7 @@ class PhysicsBubbleHandler(object):
             return CEllipse(cpos=pos, size=self.norm.nt((90, 90)), segments=4)
 
     def on_touch_down(self, cid, pos):
+        print(cid)
         if cid == self.cid:
             self.gui.on_touch_down(pos)
 
