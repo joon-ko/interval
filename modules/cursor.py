@@ -149,15 +149,15 @@ class TempoCursorHandler(object):
         )
 
     def on_touch_down(self, cid, pos):
-        print(cid, self.touch_points[cid])
-
         if cid == self.cid:
             self.gui.on_touch_down(pos)
 
         if not self.sandbox.in_bounds(pos):
             return
 
-        if len(self.touch_points[cid]) == 0:
+        touch_points = self.touch_points[cid]
+
+        if len(touch_points) == 0:
             return
         cursor = TempoCursor(
             self.norm, pos, self.tempo, self.clock, self.tempo_map,
