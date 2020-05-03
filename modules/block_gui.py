@@ -330,7 +330,7 @@ class PitchSelect(InstructionGroup):
         self.black = (.2, .2, .2)
         self.color_names = [
             'red', 'orange', 'yellow', 'green', 'teal', 'blue', 'indigo', 'violet',
-            'red', 'orange', 'yellow', 'green', 'teal'
+            'turquoise', 'pink', 'peach', 'magenta', 'grey'
         ]
         self.callback = callback
         self.pos = pos
