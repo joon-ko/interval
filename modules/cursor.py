@@ -138,20 +138,26 @@ class TempoCursorHandler(object):
         self.clock = Clock()
         self.tempo_map = SimpleTempoMap(bpm=self.tempo)
 
+        self.touch_points = {}
+
         self.cursors = AnimGroup()
         self.sandbox.add(self.cursors)
 
-        self.gui = CursorGUI(norm, pos=self.norm.nt((20, 300)))
+        self.gui = CursorGUI(
+            norm, pos=self.norm.nt((20, 300)),
+            beat_callback=self.update_touch_points
+        )
 
     def on_touch_down(self, cid, pos):
+        print(cid, self.touch_points[cid])
+
         if cid == self.cid:
             self.gui.on_touch_down(pos)
 
         if not self.sandbox.in_bounds(pos):
             return
 
-        touch_points = self.gui.bs.touch_points
-        if len(touch_points) == 0:
+        if len(self.touch_points[cid]) == 0:
             return
         cursor = TempoCursor(
             self.norm, pos, self.tempo, self.clock, self.tempo_map,
@@ -172,6 +178,10 @@ class TempoCursorHandler(object):
     def on_update(self):
         self.cursors.on_update()
 
+    def update_touch_points(self, touch_points):
+        self.touch_points[self.cid] = touch_points
+        self.update_server_state(post=True)
+
     def display_controls(self):
         cur_time = self.clock.get_time()
         cur_tick = self.tempo_map.time_to_tick(cur_time)
@@ -180,3 +190,28 @@ class TempoCursorHandler(object):
         info += 'time: {}\n'.format(cur_time)
         info += tick_str(cur_tick)
         return info
+
+    def update_server_state(self, post=False):
+        """Update server state. If post is True, relay this updated state to all clients."""
+        state = {'touch_points': self.touch_points}
+        data = {'module': self.module_name, 'cid': self.cid, 'state': state, 'post': post}
+        self.client.emit('update_state', data)
+
+    def update_client_state(self, cid, state):
+        """Update this handler's state."""
+        if cid != self.cid: # this client already updated its own state
+            self.touch_points = state['touch_points']
+
+    def sync_state(self, state):
+        """
+        Initial sync with the server's copy of module state.
+        """
+        self.touch_points = state['touch_points']
+
+        # after initial sync, add default values for this client
+        self.touch_points[self.cid] = []
+
+        # update server with these default values
+        # post=True here because we want all other clients' states to update with this client's
+        # default values.
+        self.update_server_state(post=True)
