@@ -34,8 +34,9 @@ class TempoCursor(InstructionGroup):
         super(TempoCursor, self).__init__()
         self.norm = norm
         self.pos = pos
+        self.size = self.norm.nt((70, 70))
 
-        self.cursor = CEllipse(cpos=pos, csize=self.norm.nt((70, 70)))
+        self.cursor = CEllipse(cpos=pos, csize=self.size)
         self.add(Color(1, 1, 1))
         self.add(self.cursor)
 
@@ -138,10 +139,17 @@ class TempoCursorHandler(object):
         self.clock = Clock()
         self.tempo_map = SimpleTempoMap(bpm=self.tempo)
 
+        self.touch_points = {}
+
         self.cursors = AnimGroup()
         self.sandbox.add(self.cursors)
 
-        self.gui = CursorGUI(norm, pos=self.norm.nt((20, 300)))
+        self.gui = CursorGUI(
+            norm, pos=self.norm.nt((20, 300)),
+            beat_callback=self.update_touch_points
+        )
+
+        self.delete_mode = {}
 
     def on_touch_down(self, cid, pos):
         if cid == self.cid:
@@ -150,7 +158,19 @@ class TempoCursorHandler(object):
         if not self.sandbox.in_bounds(pos):
             return
 
-        touch_points = self.gui.bs.touch_points
+        for cursor in self.cursors.objects:
+            cursor_pos = (cursor.pos[0] - cursor.size[0]/2, cursor.pos[1] - cursor.size[1]/2)
+            if in_bounds(pos, cursor_pos, cursor.size):
+                if self.delete_mode[cid]:
+                    self.cursors.objects.remove(cursor)
+                    self.cursors.remove(cursor)
+                    return
+
+        if self.delete_mode[cid]:
+            return
+
+        touch_points = self.touch_points[cid]
+
         if len(touch_points) == 0:
             return
         cursor = TempoCursor(
@@ -168,15 +188,53 @@ class TempoCursorHandler(object):
     def on_key_down(self, cid, key):
         if key == 'p':
             self.clock.toggle()
+        if key == 'v' and cid == self.cid:
+            self.delete_mode[cid] = not self.delete_mode[cid]
+            self.update_server_state(post=True)
 
     def on_update(self):
         self.cursors.on_update()
 
+    def update_touch_points(self, touch_points):
+        self.touch_points[self.cid] = touch_points
+        self.update_server_state(post=True)
+
     def display_controls(self):
         cur_time = self.clock.get_time()
         cur_tick = self.tempo_map.time_to_tick(cur_time)
-
-        info = 'tempo: {}\n'.format(self.tempo)
+        info = 'delete mode: {}\n\n'.format(self.delete_mode[self.cid])
+        info += 'tempo: {}\n'.format(self.tempo)
         info += 'time: {}\n'.format(cur_time)
         info += tick_str(cur_tick)
         return info
+
+    def update_server_state(self, post=False):
+        """Update server state. If post is True, relay this updated state to all clients."""
+        state = {
+            'touch_points': self.touch_points,
+            'delete_mode': self.delete_mode
+        }
+        data = {'module': self.module_name, 'cid': self.cid, 'state': state, 'post': post}
+        self.client.emit('update_state', data)
+
+    def update_client_state(self, cid, state):
+        """Update this handler's state."""
+        if cid != self.cid: # this client already updated its own state
+            self.touch_points = state['touch_points']
+            self.delete_mode = state['delete_mode']
+
+    def sync_state(self, state):
+        """
+        Initial sync with the server's copy of module state.
+        """
+        self.touch_points = state['touch_points']
+        self.delete_mode = state['delete_mode']
+
+        # after initial sync, add default values for this client
+        self.touch_points[self.cid] = []
+        self.delete_mode[self.cid] = False
+
+        # update server with these default values
+        # post=True here because we want all other clients' states to update with this client's
+        # default values.
+        self.update_server_state(post=True)

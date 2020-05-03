@@ -145,10 +145,9 @@ class SoundBlockHandler(object):
             'grey': (140/255, 143/255, 148/255),
             'white': (239/255, 226/255, 222/255)
         }
-        self.pitch_list = [60, 62, 64, 65, 67, 69, 71, 72]
 
         self.default_color = self.color_dict['violet']
-        self.default_pitch = self.pitch_list[0]
+        self.default_pitch = 60
         self.default_timbre = 'sine'
         self.default_instrument = 'piano'
         self.default_drum = 'snare'
@@ -173,6 +172,8 @@ class SoundBlockHandler(object):
             drum_callback = self.update_drum
         )
 
+        self.delete_mode = {}
+
     def on_touch_down(self, cid, pos):
         if cid == self.cid:
             self.gui.on_touch_down(pos)
@@ -183,9 +184,17 @@ class SoundBlockHandler(object):
         # when a block is clicked, flash and play a sound
         for block in self.blocks.objects:
             if in_bounds(pos, block.pos, block.size):
+                if self.delete_mode[cid]:
+                    self.blocks.objects.remove(block)
+                    self.blocks.remove(block)
+                    return
+
                 block.flash()
                 self.skip[cid] = True
                 return # don't start drawing a SoundBlock
+
+        if self.delete_mode[cid]:
+            return
 
         self.hold_point[cid] = pos
         self.hold_shape[cid] = Rectangle(pos = pos, size = (0,0))
@@ -228,6 +237,9 @@ class SoundBlockHandler(object):
     def on_touch_up(self, cid, pos):
         if self.skip.get(cid):
             self.skip[cid] = False
+            return
+
+        if self.delete_mode[cid]:
             return
 
         if self.hold_shape.get(cid) not in self.sandbox:
@@ -277,6 +289,10 @@ class SoundBlockHandler(object):
             if cid == self.cid:
                 self.gui.ps.right_press()
 
+        if key == 'v' and cid == self.cid:
+            self.delete_mode[cid] = not self.delete_mode[cid]
+            self.update_server_state(post=True)
+
         if key == 'up':
             if not self.gui.is_drum:
                 self.gui.switch_module()
@@ -301,10 +317,12 @@ class SoundBlockHandler(object):
                     self.gui.ints.select(instrument) # have the GUI update as well
 
     def display_controls(self):
+        info = 'delete mode: {}\n'.format(self.delete_mode[self.cid])
         if self.gui.is_drum:
-            return ('drum: ' + self.drum_list[self.drum_channel-len(self.inst_list)])
+            info += 'drum: {}\n'.format(self.drum_list[self.drum_channel-len(self.inst_list)])
         else:
-            return ('instrument: ' + self.inst_list[self.channel])
+            info += 'instrument: {}\n'.format(self.inst_list[self.channel])
+        return info
 
     def on_update(self):
         self.blocks.on_update()
@@ -319,7 +337,8 @@ class SoundBlockHandler(object):
             'pitch': self.pitch,
             'timbre': self.timbre,
             'instrument': self.instrument,
-            'drum': self.drum
+            'drum': self.drum,
+            'delete_mode': self.delete_mode
         }
         data = {'module': self.module_name, 'cid': self.cid, 'state': state, 'post': post}
         self.client.emit('update_state', data)
@@ -334,6 +353,7 @@ class SoundBlockHandler(object):
             self.timbre = state['timbre']
             self.instrument = state['instrument']
             self.drum = state['drum']
+            self.delete_mode = state['delete_mode']
 
     def sync_state(self, state):
         """
@@ -346,6 +366,7 @@ class SoundBlockHandler(object):
         self.timbre = state['timbre']
         self.instrument = state['instrument']
         self.drum = state['drum']
+        self.delete_mode = state['delete_mode']
 
         # after initial sync, add default values for this client
         self.color[self.cid] = self.default_color
@@ -353,6 +374,7 @@ class SoundBlockHandler(object):
         self.timbre[self.cid] = self.default_timbre
         self.instrument[self.cid] = self.default_instrument
         self.drum[self.cid] = self.default_drum
+        self.delete_mode[self.cid] = False
 
         self.skip[self.cid] = False
         self.draw_skip[self.cid] = False

@@ -89,12 +89,18 @@ SoundBlockState = {
     'pitch': {},
     'timbre': {},
     'instrument': {},
-    'drum': {}
+    'drum': {},
+    'delete_mode': {}
+}
+TempoCursorState = {
+    'touch_points': {},
+    'delete_mode': {}
 }
 
 state_dict = {
     'PhysicsBubble': PhysicsBubbleState,
-    'SoundBlock': SoundBlockState
+    'SoundBlock': SoundBlockState,
+    'TempoCursor': TempoCursorState
 }
 
 if __name__ == '__main__':

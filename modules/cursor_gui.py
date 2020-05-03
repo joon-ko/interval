@@ -17,7 +17,7 @@ def in_bounds(mouse_pos, obj_pos, obj_size):
            (mouse_pos[1] <= obj_pos[1] + obj_size[1])
 
 class CursorGUI(InstructionGroup):
-    def __init__(self, norm, pos):
+    def __init__(self, norm, pos, beat_callback):
         super(CursorGUI, self).__init__()
 
         self.norm = norm
@@ -28,7 +28,7 @@ class CursorGUI(InstructionGroup):
         self.add(Line(rectangle=(*self.pos, *self.size), width=2))
 
         bs_pos = (self.pos[0] + self.norm.nv(20), self.pos[1] + self.norm.nv(20))
-        self.bs = BeatSelect(self.norm, bs_pos)
+        self.bs = BeatSelect(self.norm, bs_pos, beat_callback)
         self.add(self.bs)
 
     def on_touch_down(self, pos):
@@ -50,11 +50,12 @@ class TempoSelect(InstructionGroup):
         pass
 
 class BeatSelect(InstructionGroup):
-    def __init__(self, norm, pos):
+    def __init__(self, norm, pos, callback):
         super(BeatSelect, self).__init__()
 
         self.norm = norm
         self.pos = pos
+        self.callback = callback
 
         self.margin = self.norm.nv(20)
         self.beat_margin = self.norm.nv(5)
@@ -104,3 +105,4 @@ class BeatSelect(InstructionGroup):
         i, j = self.pos_to_beat(pos)
         if i is not None:
             self.toggle(i, j)
+            self.callback(self.touch_points)
