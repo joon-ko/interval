@@ -140,10 +140,9 @@ class SoundBlockHandler(object):
             'violet': (147/255, 127/255, 159/255),
             'white': (239/255, 226/255, 222/255)
         }
-        self.pitch_list = [60, 62, 64, 65, 67, 69, 71, 72]
 
         self.default_color = self.color_dict['violet']
-        self.default_pitch = self.pitch_list[0]
+        self.default_pitch = 60
         self.default_timbre = 'sine'
         self.default_instrument = 'piano'
         self.default_drum = 'snare'
@@ -168,7 +167,7 @@ class SoundBlockHandler(object):
             drum_callback = self.update_drum
         )
 
-        self.delete_mode = False
+        self.delete_mode = {}
 
     def on_touch_down(self, cid, pos):
         if cid == self.cid:
@@ -180,14 +179,17 @@ class SoundBlockHandler(object):
         # when a block is clicked, flash and play a sound
         for block in self.blocks.objects:
             if in_bounds(pos, block.pos, block.size):
-                if self.delete_mode:
+                if self.delete_mode[cid]:
                     self.blocks.objects.remove(block)
                     self.blocks.remove(block)
-                    break
+                    return
 
                 block.flash()
                 self.skip[cid] = True
                 return # don't start drawing a SoundBlock
+
+        if self.delete_mode[cid]:
+            return
 
         self.hold_point[cid] = pos
         self.hold_shape[cid] = Rectangle(pos = pos, size = (0,0))
@@ -232,6 +234,9 @@ class SoundBlockHandler(object):
             self.skip[cid] = False
             return
 
+        if self.delete_mode[cid]:
+            return
+
         if self.hold_shape.get(cid) not in self.sandbox:
             if not self.sandbox.in_bounds(pos):
                 return
@@ -243,7 +248,7 @@ class SoundBlockHandler(object):
         size = self.hold_shape[cid].size
 
         if size[0] <= 10 or size[1] <= 10:
-            self.sandbox.remove(self.hold_shape[cid])
+            self.sandbox.removec(self.hold_shape[cid])
             return
 
         self.sandbox.remove(self.hold_shape[cid])
@@ -279,8 +284,9 @@ class SoundBlockHandler(object):
             if cid == self.cid:
                 self.gui.ps.right_press()
 
-        if key == 'v':
-            self.delete_mode = not self.delete_mode
+        if key == 'v' and cid == self.cid:
+            self.delete_mode[cid] = not self.delete_mode[cid]
+            self.update_server_state(post=True)
 
         if key == 'up':
             if not self.gui.is_drum:
@@ -306,7 +312,7 @@ class SoundBlockHandler(object):
                     self.gui.ints.select(instrument) # have the GUI update as well
 
     def display_controls(self):
-        info = 'delete mode: {}\n'.format(self.delete_mode)
+        info = 'delete mode: {}\n'.format(self.delete_mode[self.cid])
         if self.gui.is_drum:
             info += 'drum: {}\n'.format(self.drum_list[self.drum_channel-len(self.inst_list)])
         else:
@@ -326,7 +332,8 @@ class SoundBlockHandler(object):
             'pitch': self.pitch,
             'timbre': self.timbre,
             'instrument': self.instrument,
-            'drum': self.drum
+            'drum': self.drum,
+            'delete_mode': self.delete_mode
         }
         data = {'module': self.module_name, 'cid': self.cid, 'state': state, 'post': post}
         self.client.emit('update_state', data)
@@ -341,6 +348,7 @@ class SoundBlockHandler(object):
             self.timbre = state['timbre']
             self.instrument = state['instrument']
             self.drum = state['drum']
+            self.delete_mode = state['delete_mode']
 
     def sync_state(self, state):
         """
@@ -353,6 +361,7 @@ class SoundBlockHandler(object):
         self.timbre = state['timbre']
         self.instrument = state['instrument']
         self.drum = state['drum']
+        self.delete_mode = state['delete_mode']
 
         # after initial sync, add default values for this client
         self.color[self.cid] = self.default_color
@@ -360,6 +369,7 @@ class SoundBlockHandler(object):
         self.timbre[self.cid] = self.default_timbre
         self.instrument[self.cid] = self.default_instrument
         self.drum[self.cid] = self.default_drum
+        self.delete_mode[self.cid] = False
 
         self.skip[self.cid] = False
         self.draw_skip[self.cid] = False

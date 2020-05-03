@@ -90,9 +90,11 @@ SoundBlockState = {
     'timbre': {},
     'instrument': {},
     'drum': {}
+    'delete_mode': {}
 }
 TempoCursorState = {
-    'touch_points': {}
+    'touch_points': {},
+    'delete_mode': {}
 }
 
 state_dict = {
