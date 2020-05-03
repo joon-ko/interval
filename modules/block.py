@@ -114,7 +114,7 @@ class SoundBlockHandler(object):
             self.synth.program(index, 0, self.instruments[inst])
 
         for index, drum in enumerate(self.drum_list):
-            self.synth.program(index+len(self.instruments), 0, 10)
+            self.synth.program(index+len(self.instruments), 128, 0)
 
         # many variables here are dicts because a user's module handler needs to keep track of
         # not just its own variables, but other users' variables as well! so we use dictionaries

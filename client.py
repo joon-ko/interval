@@ -214,7 +214,7 @@ class Sandbox(object):
         self.width, self.height = size
 
         self.border_color = Color(0, 1, 0)
-        self.border = Line(rectangle=(*self.pos, self.width, self.height))
+        self.border = Line(rectangle=(*self.pos, self.width, self.height), width=2)
         self.canvas.add(self.border_color)
         self.canvas.add(self.border)
 

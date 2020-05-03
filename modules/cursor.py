@@ -191,6 +191,10 @@ class TempoCursorHandler(object):
         if key == 'v' and cid == self.cid:
             self.delete_mode[cid] = not self.delete_mode[cid]
             self.update_server_state(post=True)
+        if key == 'up':
+            self.tempo += 4
+            self.tempo_map.set_tempo(self.tempo)
+            self.update_server_state(post=True)
 
     def on_update(self):
         self.cursors.on_update()
@@ -204,15 +208,14 @@ class TempoCursorHandler(object):
         cur_tick = self.tempo_map.time_to_tick(cur_time)
         info = 'delete mode: {}\n\n'.format(self.delete_mode[self.cid])
         info += 'tempo: {}\n'.format(self.tempo)
-        info += 'time: {}\n'.format(cur_time)
-        info += tick_str(cur_tick)
         return info
 
     def update_server_state(self, post=False):
         """Update server state. If post is True, relay this updated state to all clients."""
         state = {
             'touch_points': self.touch_points,
-            'delete_mode': self.delete_mode
+            'delete_mode': self.delete_mode,
+            'tempo': self.tempo
         }
         data = {'module': self.module_name, 'cid': self.cid, 'state': state, 'post': post}
         self.client.emit('update_state', data)
@@ -222,6 +225,7 @@ class TempoCursorHandler(object):
         if cid != self.cid: # this client already updated its own state
             self.touch_points = state['touch_points']
             self.delete_mode = state['delete_mode']
+            self.tempo = state['tempo']
 
     def sync_state(self, state):
         """
@@ -229,6 +233,7 @@ class TempoCursorHandler(object):
         """
         self.touch_points = state['touch_points']
         self.delete_mode = state['delete_mode']
+        self.tempo = state['tempo']
 
         # after initial sync, add default values for this client
         self.touch_points[self.cid] = []

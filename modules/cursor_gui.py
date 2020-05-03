@@ -35,13 +35,6 @@ class CursorGUI(InstructionGroup):
         if in_bounds(pos, self.bs.pos, self.bs.size):
             self.bs.on_touch_down(pos)
 
-class CurrentCursor(InstructionGroup):
-    def __init__(self, norm, pos):
-        super(CurrentCursor, self).__init__()
-        self.norm = norm
-        self.pos = pos
-        pass
-
 class TempoSelect(InstructionGroup):
     def __init__(self, norm, pos):
         super(TempoSelect, self).__init__()
