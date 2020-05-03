@@ -94,8 +94,7 @@ SoundBlockState = {
 }
 TempoCursorState = {
     'touch_points': {},
-    'delete_mode': {},
-    'tempo': 60
+    'delete_mode': {}
 }
 
 state_dict = {
