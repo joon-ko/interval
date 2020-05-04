@@ -87,6 +87,9 @@ class BlockGUI(InstructionGroup):
 
     def switch_module(self):
         self.is_drum = not self.is_drum
+        self.switch_highlight()
+    
+    def switch_highlight(self):
         if not self.is_drum:
             self.remove(self.highlight)
             self.highlight_pos = self.pos

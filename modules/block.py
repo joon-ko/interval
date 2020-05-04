@@ -283,11 +283,11 @@ class SoundBlockHandler(object):
             self.delete_mode[cid] = not self.delete_mode[cid]
             self.update_server_state(post=True)
 
-        if key == 'up' and cid == self.cid:
+        if key == 'up':
             if not self.gui.is_drum:
                 self.gui.switch_module()
 
-        if key == 'down' and cid == self.cid:
+        if key == 'down':
             if self.gui.is_drum:
                 self.gui.switch_module()
 
