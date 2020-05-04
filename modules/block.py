@@ -126,9 +126,6 @@ class SoundBlockHandler(object):
         # so that the corresponding touch_up event is skipped
         self.skip = {}
 
-        # for race conditions when on_touch_up occurs before on_touch_down
-        self.draw_skip = {}
-
         self.color_dict = {
             'red': (201/255, 108/255, 130/255),
             'orange': (214/255, 152/255, 142/255),
@@ -199,10 +196,6 @@ class SoundBlockHandler(object):
         self.hold_point[cid] = pos
         self.hold_shape[cid] = Rectangle(pos = pos, size = (0,0))
 
-        if self.draw_skip.get(cid):
-            self.draw_skip[cid] = False
-            return
-
         self.sandbox.add(Color(1, 1, 1))
         self.sandbox.add(self.hold_shape[cid])
 
@@ -244,9 +237,6 @@ class SoundBlockHandler(object):
 
         if self.hold_shape.get(cid) not in self.sandbox:
             if not self.sandbox.in_bounds(pos):
-                return
-            else:
-                self.draw_skip[cid] = True
                 return
 
         bottom_left = self.hold_shape[cid].pos
@@ -377,7 +367,6 @@ class SoundBlockHandler(object):
         self.delete_mode[self.cid] = False
 
         self.skip[self.cid] = False
-        self.draw_skip[self.cid] = False
 
         # now that default values are set, we can display this module's info
         self.display = True
