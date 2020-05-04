@@ -9,6 +9,7 @@ from common.core import run, lookup, register_terminate_func
 from common.gfxutil import topleft_label, resize_topleft_label
 from common.mixer import Mixer
 from common.screen import ScreenManager, Screen
+from common.writer import AudioWriter
 from kivy.core.image import Image
 from kivy.core.window import Window
 from kivy.graphics import Color, Ellipse, Rectangle, Line
@@ -49,7 +50,8 @@ class MainScreen(Screen):
         self.info = topleft_label()
         self.add_widget(self.info)
 
-        self.audio = Audio(2)
+        self.writer = AudioWriter('recordings/song')
+        self.audio = Audio(2, self.writer.add_audio)
         self.mixer = Mixer()
         self.mixer.set_gain(1.0)
         self.audio.set_generator(self.mixer)
@@ -136,6 +138,9 @@ class MainScreen(Screen):
                 self.sandbox.add(new_handler.gui)
                 self.module = self.module_dict[module_name]
                 self.module_handler = new_handler
+        elif key == 'spacebar':
+            print('boop')
+            self.writer.toggle()
         else:
             data = {'cid': client_id, 'module': self.module.name, 'key': key}
             client.emit('key_down', data)
