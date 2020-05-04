@@ -34,6 +34,7 @@ currently, the **PhysicsBubble** and **SoundBlock** modules work relatively well
 
 #### keyboard shortcuts (be a pro!)
 
+- **space**: play/stop recording music! recordings are saved in `recordings/`.
 - **z**: PhysicsBubble
 - **x**: SoundBlock
 - **c**: TempoCursor
