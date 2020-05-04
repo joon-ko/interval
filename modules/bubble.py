@@ -11,6 +11,7 @@ from kivy.core.window import Window
 from kivy.clock import Clock as kivyClock
 
 import numpy as np
+import requests
 
 from modules.bubble_gui import TimbreSelect, GravitySelect, BounceSelect, PitchSelect
 from modules.bubble_gui import BubbleGUI
@@ -298,7 +299,6 @@ class PhysicsBubbleHandler(object):
             return CEllipse(cpos=pos, size=self.norm.nt((90, 90)), segments=4)
 
     def on_touch_down(self, cid, pos):
-        print(cid)
         if cid == self.cid:
             self.gui.on_touch_down(pos)
 
@@ -311,9 +311,9 @@ class PhysicsBubbleHandler(object):
         self.hold_line[cid] = Line(points=(*pos, *pos), width=3)
         self.text[cid] = CLabelRect(cpos=pos, text=str(self.bounces[cid]))
 
-        if self.skip.get(cid) == True:
-            self.skip[cid] = False
-            return
+        # if self.skip.get(cid) == True:
+        #     self.skip[cid] = False
+        #     return
 
         self.sandbox.add(Color(*self.color[cid]))
         self.sandbox.add(self.hold_shape[cid])
@@ -338,9 +338,9 @@ class PhysicsBubbleHandler(object):
             # bounds, we should release the shape anyway as a QOL measure
             if not self.sandbox.in_bounds(pos):
                 return
-            else:
-                self.skip[cid] = True
-                return
+            # else:
+            #     self.skip[cid] = True
+            #     return
 
         self.sandbox.remove(self.hold_shape[cid])
         self.sandbox.remove(self.text[cid])

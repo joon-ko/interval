@@ -18,6 +18,10 @@ client_count = 0 # number of clients connected
 def test_online():
     return 'server online!'
 
+@app.route('/norms/<cid>')
+def get_norms(cid):
+    return state_dict['norm'].get(cid)
+
 @socketio.on('connect')
 def connect():
     """This function is run every time a new client connects to the server."""
@@ -53,6 +57,11 @@ def update_state(data):
     if post:
         send_data = {'cid': cid, 'module': module_str, 'state': server_state}
         emit('update_state', send_data, broadcast=True)
+
+@socketio.on('update_norm')
+def update_norm(data):
+    global state_dict
+    state_dict['norm'].update(data['norm'])
 
 @socketio.on('touch_down')
 def on_touch_down(data):
@@ -101,7 +110,8 @@ TempoCursorState = {
 state_dict = {
     'PhysicsBubble': PhysicsBubbleState,
     'SoundBlock': SoundBlockState,
-    'TempoCursor': TempoCursorState
+    'TempoCursor': TempoCursorState,
+    'norm': {}
 }
 
 if __name__ == '__main__':

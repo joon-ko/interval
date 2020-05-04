@@ -70,11 +70,17 @@ class MainScreen(Screen):
             'SoundBlock': SoundBlock,
             'TempoCursor': TempoCursor
         }
-        block = SoundBlockHandler(self.norm, self.sandbox, self.mixer, client, client_id)
+        block = SoundBlockHandler(
+            self.norm, self.sandbox, self.mixer, client, client_id
+        )
         self.module_handlers = {
             'SoundBlock': block,
-            'PhysicsBubble': PhysicsBubbleHandler(self.norm, self.sandbox, self.mixer, client, client_id, block),
-            'TempoCursor': TempoCursorHandler(self.norm, self.sandbox, self.mixer, client, client_id, block)
+            'PhysicsBubble': PhysicsBubbleHandler(
+                self.norm, self.sandbox, self.mixer, client, client_id, block
+            ),
+            'TempoCursor': TempoCursorHandler(
+                self.norm, self.sandbox, self.mixer, client, client_id, block
+            )
         }
 
         # name a default starting module and handler
@@ -86,6 +92,7 @@ class MainScreen(Screen):
         client.emit('sync_module_state', {'module': 'PhysicsBubble'})
         client.emit('sync_module_state', {'module': 'SoundBlock'})
         client.emit('sync_module_state', {'module': 'TempoCursor'})
+        client.emit('update_norm', {'norm': {client_id: self.norm.mode}})
 
     def on_touch_down(self, touch):
         if touch.button != 'left':
@@ -247,9 +254,17 @@ def update_client_state(data):
 
 @client.on('touch_down')
 def on_touch_down(data):
+    norm = requests.get('/norms/{}'.format(data['cid'])).text()
+    print('norm:', norm)
+    if main.norm.mode == 'mac' and norm == 'pc':
+        pos = (2 * data['pos'][0], 2 * data['pos'][1])
+    elif main.norm.mode == 'pc' and norm == 'mac':
+        pos = (0.5 * data['pos'][0], 0.5 * data['pos'][1])
+    else:
+        pos = data['pos']
     module_str = data['module']
     handler = main.module_handlers[module_str]
-    handler.on_touch_down(data['cid'], data['pos'])
+    handler.on_touch_down(data['cid'], pos)
 
 @client.on('touch_move')
 def on_touch_move(data):
