@@ -254,7 +254,7 @@ def update_client_state(data):
 
 @client.on('touch_down')
 def on_touch_down(data):
-    norm = requests.get('/norms/{}'.format(data['cid'])).text()
+    norm = requests.get('{}norms/{}'.format(server_url, data['cid'])).text
     print('norm:', norm)
     if main.norm.mode == 'mac' and norm == 'pc':
         pos = (2 * data['pos'][0], 2 * data['pos'][1])
