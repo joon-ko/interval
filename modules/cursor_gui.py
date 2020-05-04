@@ -3,6 +3,7 @@ sys.path.insert(0, os.path.abspath('..'))
 
 from kivy.graphics import Color, Line, Rectangle
 from kivy.graphics.instructions import InstructionGroup
+from common.gfxutil import CLabelRect, CRectangle
 
 def in_bounds(mouse_pos, obj_pos, obj_size):
     """
@@ -22,7 +23,17 @@ class CursorGUI(InstructionGroup):
 
         self.norm = norm
         self.pos = pos
-        self.size = self.norm.nt((300, 500))
+        self.margin = self.norm.nv(20)
+        self.size = self.norm.nt((300, 350))
+        self.white = (239/255, 226/255, 222/255)
+        self.title_height = self.norm.nv(50) # height of the word 'instrument'
+        self.title = 'beat select'
+        x,y = self.pos
+
+        title_pos = (x + self.size[0]/2, y + self.size[1] - self.title_height/2 - self.margin/2)
+        self.title = CLabelRect(cpos=title_pos, text=self.title, font_size='18')
+        self.add(Color(*self.white))
+        self.add(self.title)
 
         self.add(Color(1, 1, 1))
         self.add(Line(rectangle=(*self.pos, *self.size), width=2))
