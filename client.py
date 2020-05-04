@@ -255,7 +255,6 @@ def update_client_state(data):
 @client.on('touch_down')
 def on_touch_down(data):
     norm = requests.get('{}norms/{}'.format(server_url, data['cid'])).text
-    print('norm:', norm)
     if main.norm.mode == 'mac' and norm == 'pc':
         pos = (2 * data['pos'][0], 2 * data['pos'][1])
     elif main.norm.mode == 'pc' and norm == 'mac':
@@ -268,15 +267,29 @@ def on_touch_down(data):
 
 @client.on('touch_move')
 def on_touch_move(data):
+    norm = requests.get('{}norms/{}'.format(server_url, data['cid'])).text
+    if main.norm.mode == 'mac' and norm == 'pc':
+        pos = (2 * data['pos'][0], 2 * data['pos'][1])
+    elif main.norm.mode == 'pc' and norm == 'mac':
+        pos = (0.5 * data['pos'][0], 0.5 * data['pos'][1])
+    else:
+        pos = data['pos']
     module_str = data['module']
     handler = main.module_handlers[module_str]
-    handler.on_touch_move(data['cid'], data['pos'])
+    handler.on_touch_move(data['cid'], pos)
 
 @client.on('touch_up')
 def on_touch_up(data):
+    norm = requests.get('{}norms/{}'.format(server_url, data['cid'])).text
+    if main.norm.mode == 'mac' and norm == 'pc':
+        pos = (2 * data['pos'][0], 2 * data['pos'][1])
+    elif main.norm.mode == 'pc' and norm == 'mac':
+        pos = (0.5 * data['pos'][0], 0.5 * data['pos'][1])
+    else:
+        pos = data['pos']
     module_str = data['module']
     handler = main.module_handlers[module_str]
-    handler.on_touch_up(data['cid'], data['pos'])
+    handler.on_touch_up(data['cid'], pos)
 
 @client.on('key_down')
 def on_key_down(data):
