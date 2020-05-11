@@ -10,9 +10,10 @@
 
 ### setup locally
 1. we assume you already have all 21M.385 dependencies installed (esp. Kivy).
-2. clone and cd into this repository.
+2. clone and cd into this repository (make sure you're in the location interval/)
 3. `pip install -r requirements.txt`
-4. `python client.py`
+4. ensure that your internet connection is running
+5. `python client.py` for windows, `python client.py mac` 
 
 ### sound modules
 
@@ -30,8 +31,6 @@ we are currently working on more sound modules -- namely, at least one more stat
 
 **interval** was designed to be both a single-player and multiplayer experience -- we encourage playtesting with multiple people! under the hood, when you run `python client.py`, you connect to a server currently hosted on heroku, and the server is responsible for managing all the different clients that connect to it.
 
-currently, the **PhysicsBubble** and **SoundBlock** modules work relatively well in multiplayer. **TempoCursor** doesn't work for multiplayer yet but works well enough in single-player.
-
 #### keyboard shortcuts (be a pro!)
 
 - **space**: play/stop recording music! recordings are saved in `recordings/`.
@@ -45,8 +44,13 @@ currently, the **PhysicsBubble** and **SoundBlock** modules work relatively well
   - **asdf**: timbre select (sine, square, triangle, sawtooth)
   - **g**: toggle gravity
   - **left**, **right**: # of bounces down, up
+  - **v**: toggle delete mode 
 - **SoundBlock**
   - **qwertyui**: pitch select (white keys)
   - **23567**: pitch select (black keys)
   - **asdfg**: instrument select
   - **d**: toggle delete mode (click block to delete)
+  - **v**: toggle delete mode 
+- **TempoCursor**
+  - **up**, **down**: increase/decrease tempo
+  - **v**: toggle delete mode

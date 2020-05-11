@@ -195,6 +195,10 @@ class TempoCursorHandler(object):
             self.tempo += 4
             self.tempo_map.set_tempo(self.tempo)
             self.update_server_state(post=True)
+        if key == 'down':
+            self.tempo -= 4
+            self.tempo_map.set_tempo(self.tempo)
+            self.update_server_state(post=True)
 
     def on_update(self):
         self.cursors.on_update()
