@@ -3,13 +3,26 @@
 ![](images/alpha_1.png)
 
 ### project members
-- joon ko (joonhok)
-- nisha devasia (ndevasia)
+- joon ko (joonhok@mit.edu)
+- nisha devasia (ndevasia@mit.edu)
 
 ### [proposal document](https://docs.google.com/document/d/1v-Yr0-7mmmqrQtp-VLZKAsVBiACLiTvRRZDyHPhV9q4/edit?usp=sharing)
 
+### installing class-specific dependencies
+interval was a final project developed for the **interactive music systems** (spring 2020), a class taught by eran egozy at mit. the class was taught in python, and used the application framework [kivy](https://kivy.org/#home). at the beginning of the term, every student in the class ran a script to install the specific dependencies we'd need for the class. the steps of the script are reproduced below.
+
+1. check that [homebrew](https://brew.sh/) is installed.
+2. `brew_install portaudio`
+3. `brew_install fluidsynth`
+4. check that python/pip is installed (ideally version 3.7+).
+5. `pip install kivy`
+6. `pip install numpy`
+7. `pip install python-osc`
+8. `pip install python-rtmidi`
+9. `pip install pyaudio`
+
 ### setup locally
-1. we assume you already have all 21M.385 dependencies installed (esp. Kivy).
+1. we assume you have all 21M.385 dependencies installed (esp. Kivy).
 2. clone and cd into this repository (make sure you're in the location interval/)
 3. `pip install -r requirements.txt`
 4. ensure that your internet connection is running
