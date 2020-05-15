@@ -9,7 +9,7 @@
 ### [proposal document](https://docs.google.com/document/d/1v-Yr0-7mmmqrQtp-VLZKAsVBiACLiTvRRZDyHPhV9q4/edit?usp=sharing)
 
 ### installing class-specific dependencies
-interval was a final project developed for the **interactive music systems** (spring 2020), a class taught by eran egozy at mit. the class was taught in python, and used the application framework [kivy](https://kivy.org/#home). at the beginning of the term, every student in the class ran a script to install the specific dependencies we'd need for the class. the steps of the script are reproduced below.
+interval was a final project developed for **interactive music systems** (spring 2020), a class taught by eran egozy at mit. the class was taught in python, and used the application framework [kivy](https://kivy.org/#home). at the beginning of the term, every student in the class ran a script to install the specific dependencies we'd need for the class. the steps of the script are reproduced below.
 
 1. check that [homebrew](https://brew.sh/) is installed.
 2. `brew_install portaudio`
